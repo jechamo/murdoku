@@ -131,3 +131,13 @@ export function personaje(id: string): Personaje {
 export function conOficio(p: Personaje): string {
   return `${p.art} ${p.oficio} ${p.nombre}`;
 }
+
+/**
+ * Mayúscula solo en la primera letra. Hace falta porque `conOficio` devuelve la frase en
+ * minúscula para poder incrustarla dentro de una oración, y a veces toca abrir con ella.
+ * No vale el `capitalize` de CSS: ese pondría mayúscula en cada palabra y dejaría cosas como
+ * "El Jardinero Cosme", que en castellano no se escriben así.
+ */
+export function capitalizar(texto: string): string {
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}

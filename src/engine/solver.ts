@@ -340,6 +340,8 @@ export function propagar(
   const r1 = nivel1(pistas, ctx, dom);
   if (!r1.ok) return false;
 
+  if (nivelMax < 2) return true;
+
   for (let vuelta = 0; vuelta < 200; vuelta++) {
     let cambio = false;
 
