@@ -132,6 +132,11 @@ export function conOficio(p: Personaje): string {
   return `${p.art} ${p.oficio} ${p.nombre}`;
 }
 
+/** "al botones Nico", "a la doctora Iriarte". Con la contracción hecha. */
+export function aConOficio(p: Personaje): string {
+  return p.art === 'el' ? `al ${p.oficio} ${p.nombre}` : `a la ${p.oficio} ${p.nombre}`;
+}
+
 /**
  * Mayúscula solo en la primera letra. Hace falta porque `conOficio` devuelve la frase en
  * minúscula para poder incrustarla dentro de una oración, y a veces toca abrir con ella.

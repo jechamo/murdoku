@@ -1,5 +1,5 @@
 import { ESCENARIOS, habitacion } from './data/rooms';
-import { conOficio, personaje } from './data/cast';
+import { aConOficio, personaje } from './data/cast';
 import { NOMBRE_DIFICULTAD } from './engine/types';
 import { BarraSospechosos, Coartadas, FichasSospechosos, FichaVictima } from './ui/Dossier';
 import { Controles } from './ui/Controles';
@@ -48,7 +48,7 @@ function Cabecera() {
           {escenario.nombre}
         </h1>
         <p className="mt-2 max-w-3xl font-maquina text-sm leading-relaxed text-papel-300">
-          {escenario.entradilla} Encontraron a {conOficio(victima)} en {habCrimen.art}{' '}
+          {escenario.entradilla} Encontraron {aConOficio(victima)} en {habCrimen.art}{' '}
           {habCrimen.nombre}. Nadie compartía fila ni columna con nadie, y solo una persona se
           quedó a solas con {victima.art === 'el' ? 'él' : 'ella'}.
         </p>
