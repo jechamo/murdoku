@@ -26,20 +26,36 @@ import {
   type Direccion,
   type Pista,
   type Plano,
+  type Rasgo,
 } from './types';
 
 export type Contexto = {
   plano: Plano;
   victimaEn: Celda;
   sospechosos: string[];
+  /** Si es false, la casilla del cadáver también hay que deducirla. */
+  victimaRevelada: boolean;
 };
 
-/** Resolutor de posición: la víctima siempre se conoce; los sospechosos, según la asignación. */
-function posicion(actor: string, asig: Asignacion, ctx: Contexto): Celda | undefined {
-  return actor === VICTIMA ? ctx.victimaEn : asig[actor];
+/** Todos los que ocupan una casilla: los sospechosos y el cadáver. */
+export function ocupantesDe(ctx: Contexto): string[] {
+  return [...ctx.sospechosos, VICTIMA];
 }
 
-/** Sospechosos mencionados por la pista (la víctima no cuenta: su casilla es conocida). */
+/**
+ * Resolutor de posición. Si el caso revela dónde apareció el cadáver, esa casilla se sabe
+ * siempre; si no, la víctima es un actor más y su casilla sale de la asignación.
+ */
+function posicion(actor: string, asig: Asignacion, ctx: Contexto): Celda | undefined {
+  if (actor !== VICTIMA) return asig[actor];
+  return ctx.victimaRevelada ? ctx.victimaEn : asig[VICTIMA];
+}
+
+/**
+ * Actores mencionados por la pista, **incluida la víctima**. Quien decide si un actor cuenta
+ * como incógnita es el solver, mirando si está en los dominios: con la víctima revelada no
+ * está, y la pista que la nombra queda como unaria.
+ */
 export function actoresDe(pista: Pista): string[] {
   switch (pista.tipo) {
     case 'habitacion':
@@ -52,14 +68,15 @@ export function actoresDe(pista: Pista): string[] {
     case 'aSolas':
       return [pista.actor];
     case 'direccion':
-      return [pista.actor, pista.otro].filter((a) => a !== VICTIMA);
+      return [pista.actor, pista.otro];
     case 'diagonal':
     case 'distancia':
     case 'mismaHabitacion':
-      return [pista.a, pista.b].filter((a) => a !== VICTIMA);
+      return [pista.a, pista.b];
     case 'masCerca':
-      return [pista.cerca, pista.lejos].filter((a) => a !== VICTIMA);
+      return [pista.cerca, pista.lejos, pista.ref];
     case 'recuento':
+    case 'recuentoRasgo':
       return [];
   }
 }
@@ -69,7 +86,7 @@ export function actoresDe(pista: Pista): string[] {
  * de los que nombra. El solver las trata aparte.
  */
 export function esGlobal(pista: Pista): boolean {
-  return pista.tipo === 'recuento' || pista.tipo === 'aSolas';
+  return pista.tipo === 'recuento' || pista.tipo === 'recuentoRasgo' || pista.tipo === 'aSolas';
 }
 
 /**
@@ -170,10 +187,9 @@ export function satisface(
       const a = p(pista.actor);
       if (a === undefined) return undefined;
       const hab = plano.habitacionDe[a];
-      if (plano.habitacionDe[ctx.victimaEn] === hab) return false;
-      for (const otro of ctx.sospechosos) {
+      for (const otro of ocupantesDe(ctx)) {
         if (otro === pista.actor) continue;
-        const b = asig[otro];
+        const b = p(otro);
         if (b === undefined) return undefined;
         if (plano.habitacionDe[b] === hab) return false;
       }
@@ -183,9 +199,19 @@ export function satisface(
     case 'recuento': {
       let cuantos = 0;
       for (const s of ctx.sospechosos) {
-        const c = asig[s];
+        const c = p(s);
         if (c === undefined) return undefined;
         if (plano.habitacionDe[c] === pista.habitacion) cuantos++;
+      }
+      return cuantos === pista.cuantos;
+    }
+
+    case 'recuentoRasgo': {
+      let cuantos = 0;
+      for (const s of ctx.sospechosos) {
+        const c = p(s);
+        if (c === undefined) return undefined;
+        if (tieneRasgo(pista.rasgo, plano, c)) cuantos++;
       }
       return cuantos === pista.cuantos;
     }
@@ -201,6 +227,18 @@ export function satisface(
       if (a === undefined) return undefined;
       return columna(a, n) !== pista.c;
     }
+  }
+}
+
+/** ¿Cumple la casilla el rasgo? Es propiedad de la casilla, no de la partida. */
+export function tieneRasgo(rasgo: Rasgo, plano: Plano, celda: Celda): boolean {
+  switch (rasgo) {
+    case 'enMueble':
+      return plano.muebleDe[celda] !== null;
+    case 'perimetro':
+      return esPerimetro(celda, plano.n);
+    case 'esquina':
+      return esEsquinaDeHabitacion(plano, celda);
   }
 }
 
@@ -232,6 +270,25 @@ function nombre(actor: string): string {
 function letraColumna(c: number): string {
   return String.fromCharCode(65 + c);
 }
+
+/** Cómo se lee cada rasgo en una pista general, según cuántos cuente. */
+const COLA_RASGO: Record<Rasgo, { ninguno: string; uno: string; varios: string }> = {
+  enMueble: {
+    ninguno: 'estaba encima de un mueble',
+    uno: 'estaba encima de un mueble',
+    varios: 'estaban encima de un mueble',
+  },
+  perimetro: {
+    ninguno: 'daba a una pared exterior',
+    uno: 'daba a una pared exterior',
+    varios: 'daban a una pared exterior',
+  },
+  esquina: {
+    ninguno: 'estaba en una esquina de su habitación',
+    uno: 'estaba en una esquina de su habitación',
+    varios: 'estaban en una esquina de su habitación',
+  },
+};
 
 const PREPOSICION_DIR: Record<Direccion, string> = {
   norte: 'al norte de',
@@ -298,6 +355,13 @@ export function redactar(pista: Pista): string {
       if (pista.cuantos === 0) return `No había ningún sospechoso en ${h}.`;
       if (pista.cuantos === 1) return `Había un solo sospechoso en ${h}.`;
       return `Había ${NUMEROS[pista.cuantos] ?? pista.cuantos} sospechosos en ${h}.`;
+    }
+
+    case 'recuentoRasgo': {
+      const cola = COLA_RASGO[pista.rasgo];
+      if (pista.cuantos === 0) return `Ningún sospechoso ${cola.ninguno}.`;
+      if (pista.cuantos === 1) return `Exactamente un sospechoso ${cola.uno}.`;
+      return `Exactamente ${NUMEROS[pista.cuantos] ?? pista.cuantos} sospechosos ${cola.varios}.`;
     }
 
     case 'noEnFila':
@@ -400,6 +464,13 @@ export function generarBanco(rng: Rng, ctx: Contexto, asig: Asignacion): Pista[]
     // El recuento de la habitación del crimen desvela dónde está el asesino sin decir quién es;
     // es una pista legítima y da mucho juego, así que se queda.
     añadir({ tipo: 'recuento', habitacion: h, cuantos });
+  }
+
+  // — Pistas generales: no nombran a nadie, cuentan cuántos cumplen un rasgo.
+  for (const rasgo of ['enMueble', 'perimetro', 'esquina'] as Rasgo[]) {
+    for (let cuantos = 0; cuantos <= sospechosos.length; cuantos++) {
+      añadir({ tipo: 'recuentoRasgo', rasgo, cuantos });
+    }
   }
 
   return banco;

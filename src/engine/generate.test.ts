@@ -9,7 +9,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { celdasDeHabitacion, rectanguloDeHabitacion } from './layout';
-import { ctxDe, generarCaso, codigoDeCaso, leerCodigo } from './generate';
+import { ctxDe, generarCaso, codigoDeCaso, leerCodigo, posicionesCompletas } from './generate';
 import { cumpleTodas, redactar, satisface } from './clues';
 import {
   contarSoluciones,
@@ -52,7 +52,7 @@ describe('el generador produce casos válidos', () => {
   it('la solución declarada cumple todas las pistas emitidas', () => {
     for (const { caso, etiqueta } of CASOS) {
       const ctx = ctxDe(caso);
-      expect(cumpleTodas(caso.pistas, ctx, caso.solucion.posiciones), etiqueta).toBe(true);
+      expect(cumpleTodas(caso.pistas, ctx, posicionesCompletas(caso)), etiqueta).toBe(true);
     }
   });
 
@@ -100,7 +100,7 @@ describe('el generador produce casos válidos', () => {
       const ctx = ctxDe(caso);
       const dom = dominiosIniciales(ctx);
       expect(propagar(caso.pistas, ctx, dom, 4), etiqueta).toBe(true);
-      for (const [actor, celda] of Object.entries(caso.solucion.posiciones)) {
+      for (const [actor, celda] of Object.entries(posicionesCompletas(caso))) {
         expect(dom.get(actor)!.has(celda), `${etiqueta}: ${actor}`).toBe(true);
       }
     }

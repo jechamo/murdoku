@@ -3,7 +3,14 @@ import { rectanguloDeHabitacion } from '../engine/layout';
 import { columna, fila, nombreCelda, type Plano } from '../engine/types';
 import { Casilla, type Bordes } from './Casilla';
 import { colorDeHabitacion } from './paleta';
-import { columnasTachadas, filasTachadas, useJuego } from '../state/store';
+import {
+  actoresAColocar,
+  celdaDelCadaver,
+  columnasTachadas,
+  filasTachadas,
+  useJuego,
+  VICTIMA,
+} from '../state/store';
 
 export function Tablero() {
   const {
@@ -24,8 +31,14 @@ export function Tablero() {
   const filasFuera = filasTachadas(caso, confirmados);
   const colsFuera = columnasTachadas(caso, confirmados);
 
+  // El cadáver no se dibuja como ocupante: lleva su silueta de tiza. Si el caso lo oculta, su
+  // casilla es la que haya señalado el jugador; si no, la que se dio de entrada.
   const ocupantes = new Map<number, string>();
-  for (const [actor, celda] of Object.entries(confirmados)) ocupantes.set(celda, actor);
+  for (const [actor, celda] of Object.entries(confirmados)) {
+    if (actor !== VICTIMA) ocupantes.set(celda, actor);
+  }
+  const celdaCadaver = celdaDelCadaver(caso, confirmados);
+  const colocables = actoresAColocar(caso);
 
   const bordesDe = (celda: number): Bordes => {
     const f = fila(celda, n);
@@ -81,9 +94,7 @@ export function Tablero() {
               const c = columna(celda, n);
               const hab = habitacion(plano.habitacionDe[celda]!);
               const tachada = filasFuera.has(f) || colsFuera.has(c);
-              const marcados = caso.reparto.sospechosos.filter((s) =>
-                (candidatos[s] ?? []).includes(celda),
-              );
+              const marcados = colocables.filter((a) => (candidatos[a] ?? []).includes(celda));
               const ocupante = ocupantes.get(celda) ?? null;
 
               return (
@@ -96,7 +107,7 @@ export function Tablero() {
                   bordes={bordesDe(celda)}
                   mueble={plano.muebleDe[celda] ?? null}
                   bloqueada={plano.bloqueada[celda]!}
-                  esVictima={celda === caso.victimaEn}
+                  esVictima={celda === celdaCadaver}
                   victimaId={caso.reparto.victima}
                   tachada={tachada}
                   ocupante={ocupante}

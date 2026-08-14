@@ -1,6 +1,6 @@
 import { personaje } from '../data/cast';
 import { Retrato, IconoMueble } from './Sprite';
-import type { Celda } from '../engine/types';
+import { VICTIMA, type Celda } from '../engine/types';
 
 /** #rrggbb + alfa → rgba(). */
 export function tinte(hex: string, alfa: number): string {
@@ -56,6 +56,10 @@ function Silueta() {
 }
 
 export function Casilla(props: PropsCasilla) {
+  // La víctima se nombra con una constante, no con un id de personaje: aquí se traduce para
+  // poder pintar su retrato como el de cualquier otro.
+  const retratoDe = (actor: string) => (actor === VICTIMA ? props.victimaId : actor);
+
   const {
     etiqueta,
     colorHabitacion,
@@ -201,9 +205,9 @@ export function Casilla(props: PropsCasilla) {
                 aspectRatio: '1',
                 opacity: seleccionado === null || seleccionado === id ? 0.95 : 0.45,
               }}
-              title={personaje(id).nombre}
+              title={personaje(retratoDe(id)).nombre}
             >
-              <Retrato id={id} />
+              <Retrato id={retratoDe(id)} />
             </span>
           ))}
         </div>
@@ -243,7 +247,9 @@ export function Casilla(props: PropsCasilla) {
           (esVictima ? ', escena del crimen' : '') +
           (ocupante ? `, aquí está ${personaje(ocupante).nombre}` : '') +
           (candidatos.length > 0
-            ? `, marcada como posible para ${candidatos.map((c) => personaje(c).nombre).join(', ')}`
+            ? `, marcada como posible para ${candidatos
+                .map((c) => personaje(retratoDe(c)).nombre)
+                .join(', ')}`
             : '')
         }
         disabled={!interactiva}
@@ -264,8 +270,8 @@ export function Casilla(props: PropsCasilla) {
                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-papel-100"
           style={{ width: '34%', height: '34%' }}
           onClick={props.onConfirmar}
-          title={`Confirmar a ${personaje(seleccionado!).nombre} en ${etiqueta}`}
-          aria-label={`Confirmar a ${personaje(seleccionado!).nombre} en ${etiqueta}`}
+          title={`Confirmar a ${personaje(retratoDe(seleccionado!)).nombre} en ${etiqueta}`}
+          aria-label={`Confirmar a ${personaje(retratoDe(seleccionado!)).nombre} en ${etiqueta}`}
         >
           <svg viewBox="0 0 100 100" className="h-[70%] w-[70%]" aria-hidden>
             <path

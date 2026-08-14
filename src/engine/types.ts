@@ -72,13 +72,22 @@ export type Solucion = {
 };
 
 /**
- * Referencia a un actor dentro de una pista. La víctima se nombra con esta constante,
- * y como su casilla es conocida desde el principio, cualquier pista que la mencione
- * es en la práctica una restricción unaria.
+ * Referencia a un actor dentro de una pista. La víctima se nombra con esta constante.
+ *
+ * Si el caso la revela, su casilla es conocida y toda pista que la mencione se convierte en la
+ * práctica en una restricción unaria. Si no, es un ocupante más que hay que deducir.
  */
 export const VICTIMA = '@victima';
 
 export type Direccion = 'norte' | 'sur' | 'este' | 'oeste';
+
+/**
+ * Rasgos que puede contar una pista general. Todos son propiedades **de la casilla**, no de la
+ * partida: eso es lo que permite al solver usarlas para podar dominios. Un rasgo como "estaba a
+ * solas" dependería de dónde está todo el mundo y no se podría propagar, así que no entra: una
+ * pista que el solver no sabe usar acabaría siendo redundante y la poda la quitaría igual.
+ */
+export type Rasgo = 'enMueble' | 'perimetro' | 'esquina';
 
 export type Pista =
   | { tipo: 'habitacion'; actor: string; habitacion: string; negada: boolean }
@@ -97,6 +106,9 @@ export type Pista =
   | { tipo: 'mismaHabitacion'; a: string; b: string; negada: boolean }
   | { tipo: 'aSolas'; actor: string }
   | { tipo: 'recuento'; habitacion: string; cuantos: number }
+  // Pista general: no nombra a nadie, cuenta cuántos sospechosos cumplen un rasgo. El
+  // pasatiempo impreso las usa ("había exactamente una persona sobre una cama").
+  | { tipo: 'recuentoRasgo'; rasgo: Rasgo; cuantos: number }
   | { tipo: 'noEnFila'; actor: string; f: number }
   | { tipo: 'noEnColumna'; actor: string; c: number };
 
@@ -109,8 +121,14 @@ export type Caso = {
   dificultad: Dificultad;
   plano: Plano;
   reparto: Reparto;
-  /** Casilla donde apareció el cadáver. Se revela desde el inicio. */
+  /** Casilla donde apareció el cadáver. */
   victimaEn: Celda;
+  /**
+   * Si es `false`, la casilla del cadáver **no** se da: hay que deducirla como la de cualquier
+   * otro. Sale sola al final, porque al colocar a los sospechosos queda libre una única fila y
+   * una única columna, y el cadáver está en su cruce — es "la última casilla libre" del libro.
+   */
+  victimaRevelada: boolean;
   pistas: Pista[];
   solucion: Solucion;
 };

@@ -1,33 +1,90 @@
 import { capitalizar, conOficio, personaje } from '../data/cast';
 import { habitacion } from '../data/rooms';
-import { nombreCelda } from '../engine/types';
+import { nombreCelda, VICTIMA } from '../engine/types';
 import { Retrato } from './Sprite';
-import { useJuego } from '../state/store';
+import { actoresAColocar, celdaDelCadaver, useJuego } from '../state/store';
 
-/** Ficha de la víctima: siempre visible, con su casilla, que se conoce desde el principio. */
+/**
+ * Ficha de la víctima.
+ *
+ * Si el caso revela dónde apareció el cadáver, es solo informativa. Si no, **se selecciona y se
+ * coloca igual que un sospechoso**: su casilla es una incógnita más y sale por eliminación, al
+ * quedar libres una única fila y una única columna.
+ */
 export function FichaVictima() {
-  const caso = useJuego((s) => s.caso);
+  const { caso, seleccionado, candidatos, confirmados, errores, fase, seleccionar, soltar } =
+    useJuego();
   const v = personaje(caso.reparto.victima);
-  const hab = habitacion(caso.plano.habitacionDe[caso.victimaEn]!);
+  const celda = celdaDelCadaver(caso, confirmados);
+  const hab = celda === null ? null : habitacion(caso.plano.habitacionDe[celda]!);
+  const activo = seleccionado === VICTIMA;
+  const fallo = errores.includes(VICTIMA);
+
+  const cuerpo = (
+    <>
+      <span
+        className={`h-14 w-14 shrink-0 overflow-hidden rounded-md ring-2 ring-sangre-500/70 ${
+          celda === null ? 'opacity-60 grayscale' : 'grayscale'
+        }`}
+      >
+        <Retrato id={v.id} />
+      </span>
+      <span className="min-w-0 text-left">
+        <span className="block font-maquina text-[0.65rem] uppercase tracking-[0.2em] text-sangre-400">
+          La víctima
+        </span>
+        <span className="block truncate font-titular text-lg leading-tight text-papel-100">
+          {v.nombre}
+        </span>
+        <span className="block truncate text-xs text-papel-300">
+          {v.art === 'el' ? 'El' : 'La'} {v.oficio}
+          {celda !== null && hab ? (
+            ` · ${nombreCelda(celda, caso.n)} · ${hab.nombre}`
+          ) : (
+            <span className="text-sangre-400"> · sin localizar</span>
+          )}
+        </span>
+      </span>
+    </>
+  );
+
+  if (caso.victimaRevelada) {
+    return (
+      <article className="ficha flex items-center gap-3 border-sangre-600/60 bg-sangre-600/10 p-3">
+        {cuerpo}
+      </article>
+    );
+  }
 
   return (
-    <article className="ficha flex items-center gap-3 border-sangre-600/60 bg-sangre-600/10 p-3">
-      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-md grayscale ring-2 ring-sangre-500/70">
-        <Retrato id={v.id} />
-      </div>
-      <div className="min-w-0">
-        <p className="font-maquina text-[0.65rem] uppercase tracking-[0.2em] text-sangre-400">
-          La víctima
-        </p>
-        <p className="truncate font-titular text-lg leading-tight text-papel-100">
-          {v.nombre}
-        </p>
-        <p className="text-xs text-papel-300">
-          {v.art === 'el' ? 'El' : 'La'} {v.oficio} · {nombreCelda(caso.victimaEn, caso.n)} ·{' '}
-          {hab.nombre}
-        </p>
-      </div>
-    </article>
+    <div
+      className={`ficha overflow-hidden border-sangre-600/60 bg-sangre-600/10 transition ${
+        activo ? 'border-ambar-400 shadow-foco' : ''
+      } ${fallo ? 'border-sangre-500' : ''}`}
+    >
+      <button
+        type="button"
+        className="flex w-full items-center gap-3 p-3 text-left focus-visible:outline-none"
+        onClick={() => seleccionar(VICTIMA)}
+        aria-pressed={activo}
+        disabled={fase !== 'jugando'}
+      >
+        {cuerpo}
+        <span className="ml-auto shrink-0 font-maquina text-xs text-papel-400">
+          {celda !== null ? '' : (candidatos[VICTIMA] ?? []).length || '—'}
+        </span>
+      </button>
+      {celda !== null && fase === 'jugando' && (
+        <button
+          type="button"
+          className="w-full border-t border-tinta-700 bg-tinta-800/60 px-2 py-1 text-[0.7rem]
+                     font-semibold text-papel-400 transition hover:bg-tinta-700 hover:text-sangre-400"
+          onClick={() => soltar(VICTIMA)}
+        >
+          Soltar
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -132,12 +189,13 @@ export function BarraSospechosos() {
       aria-label="Elegir sospechoso"
     >
       <ul className="flex gap-2 overflow-x-auto pb-1">
-        {caso.reparto.sospechosos.map((id) => {
+        {actoresAColocar(caso).map((actor) => {
+          const id = actor === VICTIMA ? caso.reparto.victima : actor;
           const p = personaje(id);
-          const celda = confirmados[id];
-          const activo = seleccionado === id;
+          const celda = confirmados[actor];
+          const activo = seleccionado === actor;
           return (
-            <li key={id} className="shrink-0">
+            <li key={actor} className="shrink-0">
               <button
                 type="button"
                 className={`flex w-16 flex-col items-center gap-1 rounded-md border p-1.5 transition
@@ -146,11 +204,13 @@ export function BarraSospechosos() {
                                 ? 'border-ambar-400 bg-ambar-400/15'
                                 : 'border-tinta-600 bg-tinta-800/70'
                             }`}
-                onClick={() => seleccionar(id)}
+                onClick={() => seleccionar(actor)}
                 aria-pressed={activo}
               >
                 <span
-                  className="h-9 w-9 overflow-hidden rounded"
+                  className={`h-9 w-9 overflow-hidden rounded ${
+                    actor === VICTIMA ? 'grayscale' : ''
+                  }`}
                   style={{ outline: `2px solid ${p.color}`, outlineOffset: '-1px' }}
                 >
                   <Retrato id={id} />
@@ -165,7 +225,7 @@ export function BarraSospechosos() {
                 >
                   {celda !== undefined
                     ? nombreCelda(celda, caso.n)
-                    : (candidatos[id] ?? []).length || '·'}
+                    : (candidatos[actor] ?? []).length || '·'}
                 </span>
               </button>
             </li>

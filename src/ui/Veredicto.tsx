@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { capitalizar, conOficio, personaje } from '../data/cast';
 import { habitacion } from '../data/rooms';
 import { estaResuelto } from '../engine/explain';
-import { nombreCelda } from '../engine/types';
+import { nombreCelda, VICTIMA } from '../engine/types';
 import { Retrato } from './Sprite';
 import { useJuego } from '../state/store';
 
@@ -39,10 +39,15 @@ function PanelAcusacion() {
       </p>
       <h2 className="titulo-caso mt-1 text-2xl text-papel-100">¿Quién lo hizo?</h2>
       <p className="mt-2 text-sm leading-relaxed text-papel-300">
-        Quien se quedó a solas con {conOficio(personaje(caso.reparto.victima))} en{' '}
-        {habitacion(caso.plano.habitacionDe[caso.victimaEn]!).art}{' '}
-        {habitacion(caso.plano.habitacionDe[caso.victimaEn]!).nombre} es el asesino. Señala a
-        alguien.
+        Quien se quedó a solas con {conOficio(personaje(caso.reparto.victima))}
+        {/* Con el cadáver por localizar no se puede nombrar la estancia sin destripar dónde
+            está: la reconstrucción del jugador podría ser errónea. */}
+        {caso.victimaRevelada
+          ? ` en ${habitacion(caso.plano.habitacionDe[caso.victimaEn]!).art} ${
+              habitacion(caso.plano.habitacionDe[caso.victimaEn]!).nombre
+            }`
+          : ' en su misma habitación'}{' '}
+        es el asesino. Señala a alguien.
       </p>
 
       <ul className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -142,8 +147,19 @@ function PanelVeredicto() {
       <p className="mt-4 text-sm leading-relaxed text-papel-200">{explicacion}</p>
 
       <ul className="mt-4 space-y-1 border-l-2 border-tinta-600 pl-3">
-        <li className="font-maquina text-xs text-papel-300">
+        <li
+          className={`font-maquina text-xs ${
+            caso.victimaRevelada || confirmados[VICTIMA] === caso.victimaEn
+              ? 'text-papel-300'
+              : 'text-sangre-400'
+          }`}
+        >
           † {victima.nombre} — {nombreCelda(caso.victimaEn, caso.n)} · {habCrimen.nombre}
+          {!caso.victimaRevelada && confirmados[VICTIMA] !== caso.victimaEn
+            ? confirmados[VICTIMA] !== undefined
+              ? `  (tú pusiste ${nombreCelda(confirmados[VICTIMA]!, caso.n)})`
+              : '  (no llegaste a situarlo)'
+            : ''}
         </li>
         {caso.reparto.sospechosos.map((id) => {
           const celda = caso.solucion.posiciones[id]!;

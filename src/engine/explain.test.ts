@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { generarCaso } from './generate';
+import { actoresAColocar, generarCaso, posicionesCompletas } from './generate';
 import { colocacionesErroneas, detallarPaso, estaResuelto, siguientePaso } from './explain';
 import { DIFICULTADES, type Asignacion } from './types';
 
@@ -20,6 +20,11 @@ const CASOS = [6, 7, 8].flatMap((n) =>
 );
 
 describe('la ayuda paso a paso', () => {
+  it('el lote cubre las dos variantes: con el cadáver a la vista y sin él', () => {
+    const variantes = new Set(CASOS.map(({ caso }) => caso.victimaRevelada));
+    expect(variantes, 'faltan casos de alguna variante').toEqual(new Set([true, false]));
+  });
+
   it('resuelve cualquier caso siguiendo solo sus propias indicaciones', () => {
     for (const { caso, etiqueta } of CASOS) {
       const colocados: Asignacion = {};
@@ -30,11 +35,11 @@ describe('la ayuda paso a paso', () => {
         expect(paso, `${etiqueta}: se quedó sin deducciones tras ${pasos} pasos`).not.toBeNull();
         colocados[paso!.actor] = paso!.celda;
         pasos++;
-        expect(pasos, `${etiqueta}: bucle`).toBeLessThanOrEqual(caso.n);
+        expect(pasos, `${etiqueta}: bucle`).toBeLessThanOrEqual(caso.n + 1);
       }
 
-      expect(pasos, etiqueta).toBe(caso.reparto.sospechosos.length);
-      expect(colocados, etiqueta).toEqual(caso.solucion.posiciones);
+      expect(pasos, etiqueta).toBe(actoresAColocar(caso).length);
+      expect(colocados, etiqueta).toEqual(posicionesCompletas(caso));
     }
   });
 
@@ -58,11 +63,11 @@ describe('la ayuda paso a paso', () => {
     const [primero, segundo] = caso.reparto.sospechosos as [string, string];
 
     // Al primer sospechoso se le pone la casilla del segundo: es un error, y de los dos.
-    const mal: Asignacion = { [primero]: caso.solucion.posiciones[segundo]! };
+    const mal: Asignacion = { [primero]: posicionesCompletas(caso)[segundo]! };
     expect(colocacionesErroneas(caso, mal)).toEqual([primero]);
     expect(siguientePaso(caso, mal)).toBeNull();
 
-    const bien: Asignacion = { [primero]: caso.solucion.posiciones[primero]! };
+    const bien: Asignacion = { [primero]: posicionesCompletas(caso)[primero]! };
     expect(colocacionesErroneas(caso, bien)).toEqual([]);
   });
 });

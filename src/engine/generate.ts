@@ -23,6 +23,7 @@ import {
 import { crearRng, semillaAleatoria, type Rng } from './rng';
 import {
   NIVEL_DE_DIFICULTAD,
+  VICTIMA,
   type Asignacion,
   type Caso,
   type Dificultad,
@@ -36,6 +37,7 @@ import {
 const INTERES: Record<Pista['tipo'], number> = {
   aSolas: 9,
   recuento: 9,
+  recuentoRasgo: 10,
   enMueble: 9,
   masCerca: 8,
   mismaHabitacion: 7,
@@ -118,12 +120,48 @@ function construirYPodar(
     }
   }
   if (!suficiente) return null;
+  return podar(rng, elegidas, ctx, nivel);
+}
 
-  // — Poda: se intenta quitar cada pista, empezando por las más sosas.
-  let actual = elegidas;
+/** Quita todo lo que sobre, probando primero las pistas más sosas. */
+function podar(rng: Rng, pistas: readonly Pista[], ctx: Contexto, nivel: Nivel): Pista[] {
+  let actual = [...pistas];
   for (const pista of ordenarPorInteres(rng, actual, false)) {
     const sinElla = actual.filter((p) => p !== pista);
     if (sinElla.length > 0 && cierra(sinElla, ctx, nivel)) actual = sinElla;
+  }
+  return actual;
+}
+
+/**
+ * Intenta meter una pista general —de las que no nombran a nadie y solo cuentan cuántos
+ * cumplen un rasgo— **a cambio de** otra del conjunto.
+ *
+ * Hace falta el intercambio porque añadirlas sin más no sirve: al ser las de mayor interés
+ * entran las primeras en la construcción, el resto del conjunto acaba haciendo todo el trabajo
+ * y la poda las retira por redundantes. Sustituyendo a otra pista, en cambio, la general pasa a
+ * ser portante y se queda.
+ *
+ * Devuelve el conjunto original si no encuentra ningún intercambio que aguante.
+ */
+function inyectarGeneral(
+  rng: Rng,
+  actual: Pista[],
+  banco: readonly Pista[],
+  ctx: Contexto,
+  nivel: Nivel,
+): Pista[] {
+  if (actual.some((p) => p.tipo === 'recuentoRasgo')) return actual;
+
+  for (const general of rng.baraja(banco.filter((p) => p.tipo === 'recuentoRasgo'))) {
+    for (const fuera of rng.baraja(actual)) {
+      const candidato = [...actual.filter((p) => p !== fuera), general];
+      if (!cierra(candidato, ctx, nivel)) continue;
+
+      // La poda puede volver a dejarla fuera si encuentra otro camino; solo vale si sobrevive.
+      const podado = podar(rng, candidato, ctx, nivel);
+      if (podado.some((p) => p.tipo === 'recuentoRasgo')) return podado;
+    }
   }
   return actual;
 }
@@ -161,17 +199,35 @@ export function generarCaso(opciones: OpcionesCaso = {}): Caso {
       asignacion[s] = colocacion.deSospechosos[i]!;
     });
 
+    // La variante alterna: en unos casos se da la casilla del cadáver y en otros hay que
+    // deducirla igual que las demás. Depende de la semilla, así que un mismo código de caso
+    // siempre trae la misma variante.
+    const victimaRevelada = rng.quiza(0.6);
+
     const ctx: Contexto = {
       plano,
       victimaEn: colocacion.victimaEn,
       sospechosos: reparto.sospechosos,
+      victimaRevelada,
     };
 
-    const banco = generarBanco(rng, ctx, asignacion);
+    // Con el cadáver oculto, la víctima es un ocupante más y también entra en la asignación.
+    const asignacionCompleta: Asignacion = victimaRevelada
+      ? asignacion
+      : { ...asignacion, [VICTIMA]: colocacion.victimaEn };
+
+    const banco = generarBanco(rng, ctx, asignacionCompleta);
+
+    // En algo más de la mitad de los casos se intenta que entre una pista general, para que
+    // el conjunto de casos tenga de las dos clases y no todas se parezcan.
+    const buscarGeneral = rng.quiza(0.55);
 
     for (let afinado = 0; afinado < INTENTOS_AFINADO; afinado++) {
-      const pistas = construirYPodar(rng, banco, ctx, nivelObjetivo);
-      if (pistas === null) break;
+      const podado = construirYPodar(rng, banco, ctx, nivelObjetivo);
+      if (podado === null) break;
+      const pistas = buscarGeneral
+        ? inyectarGeneral(rng, podado, banco, ctx, nivelObjetivo)
+        : podado;
 
       const nivel = nivelRequerido(pistas, ctx);
       if (nivel === null) continue; // no debería ocurrir: acaba de cerrar
@@ -183,6 +239,7 @@ export function generarCaso(opciones: OpcionesCaso = {}): Caso {
         plano,
         reparto,
         victimaEn: colocacion.victimaEn,
+        victimaRevelada,
         pistas,
         solucion: {
           posiciones: { ...asignacion },
@@ -217,7 +274,30 @@ export function ctxDe(caso: Caso): Contexto {
     plano: caso.plano,
     victimaEn: caso.victimaEn,
     sospechosos: caso.reparto.sospechosos,
+    victimaRevelada: caso.victimaRevelada,
   };
+}
+
+/**
+ * La asignación completa de la solución: los sospechosos y, si el caso oculta el cadáver,
+ * también la víctima.
+ *
+ * `solucion.posiciones` guarda solo a los sospechosos —es "dónde estaba cada sospechoso"— y la
+ * casilla del cadáver vive siempre en `caso.victimaEn`. Para evaluar pistas contra la verdad
+ * hace falta juntar las dos cosas, porque con la variante oculta la víctima es una incógnita
+ * más y hay pistas que la nombran.
+ */
+export function posicionesCompletas(caso: Caso): Asignacion {
+  return caso.victimaRevelada
+    ? caso.solucion.posiciones
+    : { ...caso.solucion.posiciones, [VICTIMA]: caso.victimaEn };
+}
+
+/** Actores que el jugador tiene que colocar en el tablero. */
+export function actoresAColocar(caso: Caso): string[] {
+  return caso.victimaRevelada
+    ? caso.reparto.sospechosos
+    : [...caso.reparto.sospechosos, VICTIMA];
 }
 
 /** Identificador compartible: 8x8-dificil-A3F91C */

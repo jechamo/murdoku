@@ -1,8 +1,23 @@
 import { create } from 'zustand';
 
-import { generarCaso, codigoDeCaso, leerCodigo, type OpcionesCaso } from '../engine/generate';
+import {
+  actoresAColocar,
+  codigoDeCaso,
+  generarCaso,
+  leerCodigo,
+  posicionesCompletas,
+  type OpcionesCaso,
+} from '../engine/generate';
 import { colocacionesErroneas, estaResuelto, siguientePaso, type Paso } from '../engine/explain';
-import { columna, fila, type Asignacion, type Caso, type Celda, type Dificultad } from '../engine/types';
+import {
+  columna,
+  fila,
+  VICTIMA,
+  type Asignacion,
+  type Caso,
+  type Celda,
+  type Dificultad,
+} from '../engine/types';
 
 /** Lo que se guarda para poder deshacer. */
 type Instantanea = {
@@ -174,7 +189,7 @@ export const useJuego = create<Estado>((set, get) => ({
       // demás que caigan ahí, y las propias del sospechoso en otras casillas.
       const candidatos: Record<string, Celda[]> = {};
       const descartes: Record<string, Celda[]> = {};
-      for (const otro of s.caso.reparto.sospechosos) {
+      for (const otro of actoresAColocar(s.caso)) {
         if (otro === actor) continue;
         candidatos[otro] = (s.candidatos[otro] ?? []).filter(
           (x) => fila(x, n) !== f && columna(x, n) !== c,
@@ -249,11 +264,11 @@ export const useJuego = create<Estado>((set, get) => ({
 
   acusar: (actor) => set({ acusado: actor, fase: 'veredicto' }),
 
-  /** Rendirse: se vuelca la verdad sobre el tablero. */
+  /** Rendirse: se vuelca la verdad sobre el tablero, cadáver incluido si había que buscarlo. */
   revelar: () =>
     set((s) => ({
       historial: [...s.historial, instantanea(s)],
-      confirmados: { ...s.caso.solucion.posiciones },
+      confirmados: posicionesCompletas(s.caso),
       candidatos: {},
       descartes: {},
       errores: [],
@@ -266,23 +281,36 @@ export const useJuego = create<Estado>((set, get) => ({
 // Selectores derivados
 // ————————————————————————————————————————————————————————————————
 
-/** Filas tachadas: la del cadáver y las de todo sospechoso ya confirmado. */
+/**
+ * Filas tachadas: las de todo ocupante ya situado. La del cadáver solo cuenta de entrada si el
+ * caso revela dónde apareció; si no, hay que deducirla y se tacha al colocarlo, como a los demás.
+ */
 export function filasTachadas(caso: Caso, confirmados: Asignacion): Set<number> {
-  const set = new Set<number>([fila(caso.victimaEn, caso.n)]);
+  const set = new Set<number>();
+  if (caso.victimaRevelada) set.add(fila(caso.victimaEn, caso.n));
   for (const celda of Object.values(confirmados)) set.add(fila(celda, caso.n));
   return set;
 }
 
 export function columnasTachadas(caso: Caso, confirmados: Asignacion): Set<number> {
-  const set = new Set<number>([columna(caso.victimaEn, caso.n)]);
+  const set = new Set<number>();
+  if (caso.victimaRevelada) set.add(columna(caso.victimaEn, caso.n));
   for (const celda of Object.values(confirmados)) set.add(columna(celda, caso.n));
   return set;
 }
 
-/** Todos los sospechosos colocados: se puede acusar. */
+/** Todo el mundo situado —incluido el cadáver si había que buscarlo—: se puede acusar. */
 export function listoParaAcusar(caso: Caso, confirmados: Asignacion): boolean {
-  return caso.reparto.sospechosos.every((s) => confirmados[s] !== undefined);
+  return actoresAColocar(caso).every((a) => confirmados[a] !== undefined);
 }
+
+/** Dónde está el cadáver según el tablero: revelado de inicio, o donde lo haya puesto el jugador. */
+export function celdaDelCadaver(caso: Caso, confirmados: Asignacion): Celda | null {
+  if (caso.victimaRevelada) return caso.victimaEn;
+  return confirmados[VICTIMA] ?? null;
+}
+
+export { VICTIMA, actoresAColocar };
 
 export { estaResuelto };
 export type { Dificultad };

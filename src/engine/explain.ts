@@ -9,9 +9,9 @@
 
 import { personaje } from '../data/cast';
 import { redactar } from './clues';
-import { ctxDe } from './generate';
+import { actoresAColocar, ctxDe, posicionesCompletas } from './generate';
 import { dominiosIniciales, propagar, type Dominios, type Nivel } from './solver';
-import { nombreCelda, type Asignacion, type Caso, type Celda } from './types';
+import { nombreCelda, VICTIMA, type Asignacion, type Caso, type Celda } from './types';
 
 export type Paso = {
   actor: string;
@@ -23,16 +23,18 @@ export type Paso = {
   texto: string;
 };
 
-/** Sospechosos colocados en una casilla que no es la suya. */
+/** Actores colocados en una casilla que no es la suya. */
 export function colocacionesErroneas(caso: Caso, colocados: Asignacion): string[] {
+  const verdad = posicionesCompletas(caso);
   return Object.entries(colocados)
-    .filter(([actor, celda]) => caso.solucion.posiciones[actor] !== celda)
+    .filter(([actor, celda]) => verdad[actor] !== celda)
     .map(([actor]) => actor);
 }
 
-/** ¿Está el caso resuelto del todo? */
+/** ¿Está el caso resuelto del todo? Con el cadáver oculto, también hay que haberlo situado. */
 export function estaResuelto(caso: Caso, colocados: Asignacion): boolean {
-  return caso.reparto.sospechosos.every((s) => colocados[s] === caso.solucion.posiciones[s]);
+  const verdad = posicionesCompletas(caso);
+  return actoresAColocar(caso).every((a) => colocados[a] === verdad[a]);
 }
 
 /** Dominios de partida con las colocaciones ya confirmadas por el jugador clavadas. */
@@ -79,7 +81,7 @@ export function siguientePaso(caso: Caso, colocados: Asignacion): Paso | null {
         if (!vive || dom2.get(actor)!.size !== 1) pistasClave.push(i);
       }
 
-      const nombre = personaje(actor).nombre;
+      const nombre = personaje(actor === VICTIMA ? caso.reparto.victima : actor).nombre;
       const donde = nombreCelda(celda, caso.n);
       const referencias =
         pistasClave.length > 0

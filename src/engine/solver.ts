@@ -17,11 +17,12 @@
  *       se conoce desde el principio)
  *   2 — unicidad de fila y columna: singles desnudos y ocultos, como en el sudoku
  *   3 — consistencia de arcos sobre pistas binarias
- *   4 — conjuntos de Hall en filas y columnas, y restricciones de recuento por habitación
+ *   4 — conjuntos de Hall en filas y columnas, y restricciones de recuento (por habitación
+ *       y las pistas generales de rasgo)
  */
 
 import { celdasDeHabitacion } from './layout';
-import { actoresDe, cumpleTodas, esGlobal, satisface, type Contexto } from './clues';
+import { actoresDe, cumpleTodas, esGlobal, satisface, tieneRasgo, type Contexto } from './clues';
 import { columna, fila, VICTIMA, type Asignacion, type Celda, type Pista } from './types';
 
 export type Nivel = 1 | 2 | 3 | 4;
@@ -33,11 +34,17 @@ export function clonarDominios(d: Dominios): Dominios {
 }
 
 /**
- * Dominio de partida: toda casilla libre que no esté en la fila ni en la columna del cadáver.
- * La víctima ocupa su fila y su columna igual que cualquier otro ocupante.
+ * Dominio de partida.
+ *
+ * Con el cadáver revelado, los incógnitos son los n-1 sospechosos y quedan fuera la fila y la
+ * columna de la víctima, que ella ya ocupa. Con el cadáver oculto, **la víctima es una
+ * incógnita más**: entran los n ocupantes y ninguna línea está tomada de antemano.
+ *
+ * Esa simetría es lo que permite que el resto del solver no se entere de la variante: en los
+ * dos casos hay tantos actores como filas libres, y las reglas de sudoku valen tal cual.
  */
 export function dominiosIniciales(ctx: Contexto): Dominios {
-  const { plano, victimaEn, sospechosos } = ctx;
+  const { plano, victimaEn, sospechosos, victimaRevelada } = ctx;
   const n = plano.n;
   const fv = fila(victimaEn, n);
   const cv = columna(victimaEn, n);
@@ -45,25 +52,26 @@ export function dominiosIniciales(ctx: Contexto): Dominios {
   const disponibles: Celda[] = [];
   for (let celda = 0; celda < n * n; celda++) {
     if (plano.bloqueada[celda]) continue;
-    if (fila(celda, n) === fv || columna(celda, n) === cv) continue;
+    if (victimaRevelada && (fila(celda, n) === fv || columna(celda, n) === cv)) continue;
     disponibles.push(celda);
   }
 
-  return new Map(sospechosos.map((s) => [s, new Set(disponibles)]));
+  const actores = victimaRevelada ? sospechosos : [...sospechosos, VICTIMA];
+  return new Map(actores.map((a) => [a, new Set(disponibles)]));
 }
 
-/** Filas y columnas que deben quedar ocupadas por los sospechosos. */
+/** Filas y columnas que deben quedar ocupadas por los actores incógnita. */
 function lineasLibres(ctx: Contexto): { filas: number[]; columnas: number[] } {
   const n = ctx.plano.n;
+  const todas = Array.from({ length: n }, (_, i) => i);
+  if (!ctx.victimaRevelada) return { filas: todas, columnas: todas };
+
   const fv = fila(ctx.victimaEn, n);
   const cv = columna(ctx.victimaEn, n);
-  const filas: number[] = [];
-  const columnas: number[] = [];
-  for (let i = 0; i < n; i++) {
-    if (i !== fv) filas.push(i);
-    if (i !== cv) columnas.push(i);
-  }
-  return { filas, columnas };
+  return {
+    filas: todas.filter((i) => i !== fv),
+    columnas: todas.filter((i) => i !== cv),
+  };
 }
 
 type Resultado = { ok: boolean; cambio: boolean };
@@ -84,11 +92,12 @@ function nivel1(pistas: readonly Pista[], ctx: Contexto, dom: Dominios): Resulta
   let cambio = false;
   for (const pista of pistas) {
     if (esGlobal(pista)) continue;
-    const actores = actoresDe(pista);
+    // Solo cuentan como incógnitas los actores que están en los dominios: si el caso revela
+    // el cadáver, la víctima no está, y una pista que la nombre queda como unaria.
+    const actores = actoresDe(pista).filter((a) => dom.has(a));
     if (actores.length !== 1) continue;
     const actor = actores[0]!;
-    const d = dom.get(actor);
-    if (!d) continue;
+    const d = dom.get(actor)!;
     for (const celda of [...d]) {
       if (satisface(pista, ctx, { [actor]: celda }) === false) {
         d.delete(celda);
@@ -198,7 +207,7 @@ function nivel3(pistas: readonly Pista[], ctx: Contexto, dom: Dominios): Resulta
     if (pista.tipo === 'aSolas') {
       // "A solas" se descompone en una negación de habitación compartida contra cada uno de
       // los demás sospechosos, y eso sí es un arco binario.
-      for (const otro of ctx.sospechosos) {
+      for (const otro of dom.keys()) {
         if (otro === pista.actor) continue;
         const r = arcoBinario(ctx, dom, pista.actor, otro, (ca, cb) => {
           return ctx.plano.habitacionDe[ca] !== ctx.plano.habitacionDe[cb];
@@ -210,7 +219,7 @@ function nivel3(pistas: readonly Pista[], ctx: Contexto, dom: Dominios): Resulta
     }
 
     if (esGlobal(pista)) continue;
-    const actores = actoresDe(pista);
+    const actores = actoresDe(pista).filter((x) => dom.has(x));
     if (actores.length !== 2) continue;
     const [a, b] = actores as [string, string];
 
@@ -272,41 +281,68 @@ function hall(ctx: Contexto, dom: Dominios, indice: (c: Celda, n: number) => num
   return { ok: true, cambio };
 }
 
+/**
+ * Propagación de un recuento: "exactamente `cuantos` sospechosos cumplen `pertenece`".
+ *
+ * Sirve igual para el recuento por habitación y para las pistas generales, que solo se
+ * diferencian en qué casillas forman el conjunto.
+ */
+function propagarRecuento(
+  dom: Dominios,
+  cuantos: number,
+  pertenece: (celda: Celda) => boolean,
+): Resultado {
+  let cambio = false;
+
+  // El recuento habla de sospechosos: si el cadáver está entre las incógnitas, no cuenta.
+  const seguros: string[] = [];
+  const posibles: string[] = [];
+  for (const [actor, d] of dom) {
+    if (actor === VICTIMA) continue;
+    const dentro = [...d].filter(pertenece);
+    if (dentro.length > 0) posibles.push(actor);
+    if (dentro.length === d.size) seguros.push(actor);
+  }
+
+  if (seguros.length > cuantos) return { ok: false, cambio };
+  if (posibles.length < cuantos) return { ok: false, cambio };
+
+  // Ya están todos los que caben: el resto se queda fuera del conjunto.
+  if (seguros.length === cuantos) {
+    for (const [actor, d] of dom) {
+      if (actor === VICTIMA || seguros.includes(actor)) continue;
+      if (quitar(d, [...d].filter(pertenece))) cambio = true;
+      if (d.size === 0) return { ok: false, cambio };
+    }
+  }
+
+  // Justo los que pueden entrar son los que hacen falta: entran todos.
+  if (posibles.length === cuantos) {
+    for (const actor of posibles) {
+      const d = dom.get(actor)!;
+      if (quitar(d, [...d].filter((c) => !pertenece(c)))) cambio = true;
+      if (d.size === 0) return { ok: false, cambio };
+    }
+  }
+
+  return { ok: true, cambio };
+}
+
 function recuentos(pistas: readonly Pista[], ctx: Contexto, dom: Dominios): Resultado {
   let cambio = false;
 
   for (const pista of pistas) {
-    if (pista.tipo !== 'recuento') continue;
-    const celdas = new Set(celdasDeHabitacion(ctx.plano, pista.habitacion));
-
-    const seguros: string[] = [];
-    const posibles: string[] = [];
-    for (const [actor, d] of dom) {
-      const dentro = [...d].filter((c) => celdas.has(c));
-      if (dentro.length > 0) posibles.push(actor);
-      if (dentro.length === d.size) seguros.push(actor);
+    let r: Resultado;
+    if (pista.tipo === 'recuento') {
+      const celdas = new Set(celdasDeHabitacion(ctx.plano, pista.habitacion));
+      r = propagarRecuento(dom, pista.cuantos, (c) => celdas.has(c));
+    } else if (pista.tipo === 'recuentoRasgo') {
+      r = propagarRecuento(dom, pista.cuantos, (c) => tieneRasgo(pista.rasgo, ctx.plano, c));
+    } else {
+      continue;
     }
-
-    if (seguros.length > pista.cuantos) return { ok: false, cambio };
-    if (posibles.length < pista.cuantos) return { ok: false, cambio };
-
-    // Ya están todos los que caben: el resto queda fuera de la habitación.
-    if (seguros.length === pista.cuantos) {
-      for (const [actor, d] of dom) {
-        if (seguros.includes(actor)) continue;
-        if (quitar(d, [...d].filter((c) => celdas.has(c)))) cambio = true;
-        if (d.size === 0) return { ok: false, cambio };
-      }
-    }
-
-    // Justo los que pueden entrar son los que hacen falta: todos ellos entran.
-    if (posibles.length === pista.cuantos) {
-      for (const actor of posibles) {
-        const d = dom.get(actor)!;
-        if (quitar(d, [...d].filter((c) => !celdas.has(c)))) cambio = true;
-        if (d.size === 0) return { ok: false, cambio };
-      }
-    }
+    if (r.cambio) cambio = true;
+    if (!r.ok) return { ok: false, cambio };
   }
 
   return { ok: true, cambio };

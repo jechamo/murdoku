@@ -1,5 +1,5 @@
 import { ESCENARIOS, habitacion } from './data/rooms';
-import { aConOficio, personaje } from './data/cast';
+import { aConOficio, capitalizar, personaje } from './data/cast';
 import { NOMBRE_DIFICULTAD } from './engine/types';
 import { BarraSospechosos, Coartadas, FichasSospechosos, FichaVictima } from './ui/Dossier';
 import { Controles } from './ui/Controles';
@@ -48,9 +48,19 @@ function Cabecera() {
           {escenario.nombre}
         </h1>
         <p className="mt-2 max-w-3xl font-maquina text-sm leading-relaxed text-papel-300">
-          {escenario.entradilla} Encontraron {aConOficio(victima)} en {habCrimen.art}{' '}
-          {habCrimen.nombre}. Nadie compartía fila ni columna con nadie, y solo una persona se
-          quedó a solas con {victima.art === 'el' ? 'él' : 'ella'}.
+          {escenario.entradilla}{' '}
+          {caso.victimaRevelada ? (
+            <>
+              Encontraron {aConOficio(victima)} en {habCrimen.art} {habCrimen.nombre}.
+            </>
+          ) : (
+            <>
+              {capitalizar(aConOficio(victima).replace(/^al /, 'el ').replace(/^a la /, 'la '))} no
+              aparece por ninguna parte: hay que averiguar también dónde acabó.
+            </>
+          )}{' '}
+          Nadie compartía fila ni columna con nadie, y solo una persona se quedó a solas con{' '}
+          {victima.art === 'el' ? 'él' : 'ella'}.
         </p>
         <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 font-maquina text-[0.7rem] text-papel-400">
           <span>
@@ -60,6 +70,8 @@ function Cabecera() {
           <span>{NOMBRE_DIFICULTAD[caso.dificultad]}</span>
           <span aria-hidden>·</span>
           <span>{caso.reparto.sospechosos.length} sospechosos</span>
+          <span aria-hidden>·</span>
+          <span>{caso.victimaRevelada ? 'cadáver localizado' : 'cadáver por localizar'}</span>
           <span aria-hidden>·</span>
           <span>{caso.pistas.length} pistas</span>
         </p>
@@ -95,8 +107,11 @@ function ComoSeJuega() {
         </li>
       </ol>
       <p className="mt-2.5 border-t border-tinta-700 pt-2 text-[0.78rem] leading-relaxed text-papel-400">
-        Las casillas rayadas están ocupadas por un mueble y nadie puede ponerse ahí. Todos los
-        casos tienen una única solución y se pueden resolver razonando, sin probar suerte.
+        En una cama, un sofá o una butaca sí cabe alguien; en una nevera o una estantería, no.
+        Y hay casos en los que <strong className="text-papel-200">tampoco se sabe dónde apareció
+        el cadáver</strong>: entonces también hay que situarlo, y sale por eliminación, en la
+        última casilla que queda libre. Todos los casos tienen una única solución y se pueden
+        resolver razonando, sin probar suerte.
       </p>
     </details>
   );
