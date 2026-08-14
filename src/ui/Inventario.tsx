@@ -107,10 +107,7 @@ export function Inventario() {
                       aria-pressed={encendido}
                       onClick={() => senalar(celda)}
                     >
-                      <span
-                        className="h-8 w-8 shrink-0 overflow-hidden rounded border border-tinta-600"
-                        style={{ filter: 'brightness(1.22) contrast(1.06)' }}
-                      >
+                      <span className="h-8 w-8 shrink-0 overflow-hidden rounded border border-tinta-600 bg-tinta-950/60">
                         <IconoMueble id={idMueble} />
                       </span>
                       <span className="min-w-0 flex-1 truncate text-[0.8rem] text-papel-200">

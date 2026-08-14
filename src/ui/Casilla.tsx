@@ -136,17 +136,18 @@ export function Casilla(props: PropsCasilla) {
         aria-hidden
       >
         {/*
-         * El mueble se ve tal cual, sin película de color por encima: es una ilustración que
-         * llena la casilla. Los elementos que admiten persona (la cama, la butaca, la alfombra)
-         * van algo más tenues, porque encima de ellos van a caer retratos y marcas.
+         * El mueble es una silueta recortada sobre fondo transparente, no una baldosa: se ve
+         * tal cual y el suelo de la estancia asoma a su alrededor, que es lo que hace que las
+         * habitaciones se distingan sin echar color por encima del mobiliario.
+         *
+         * Nada de realzar el brillo aquí: eso estaba para levantar un PNG con fondo oscuro que
+         * ya no existe, y sobre el color de la sala solo lo deslavaba.
+         *
+         * Los elementos que admiten persona van un punto más tenues, porque encima de ellos van
+         * a caer retratos y marcas; los que llenan la casilla, a plena luz.
          */}
-        {/* Un punto de brillo: la ilustración viene muy oscura de origen y sobre el fondo noir
-            del tablero se apagaba demasiado. */}
         {mueble && (
-          <div
-            className={`absolute inset-0 ${bloqueada ? '' : 'opacity-70'}`}
-            style={{ filter: 'brightness(1.22) contrast(1.06)' }}
-          >
+          <div className={`absolute inset-0 ${bloqueada ? '' : 'opacity-85'}`}>
             <IconoMueble id={mueble} />
           </div>
         )}

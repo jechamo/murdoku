@@ -19,16 +19,20 @@ Retratos y mobiliario **no** se usan igual, así que no comparten formato:
 | | Personajes | Mobiliario |
 |---|---|---|
 | Tamaño | 512 × 512 px | 256 × 256 px |
-| Fondo | opaco, oscuro | **opaco, oscuro** |
-| Encaje | `object-fit: cover`, en una ficha con esquinas redondeadas | `object-fit: cover`, **llenando la casilla entera** |
+| Fondo | opaco, oscuro | **transparente** |
+| Encaje | `object-fit: cover`, en una ficha con esquinas redondeadas | `object-fit: contain`, **silueta centrada** con un 5% de margen |
 
-Lo importante del mobiliario: **no son iconos flotantes, son baldosas**. La ilustración con su
-fondo oscuro ocupa toda la casilla y el tinte de la habitación va por encima. Se hizo así
-porque las láminas salieron sin canal alfa, y recortar el fondo resultó inviable: se midió y
-los objetos oscuros (el sofá, el armario, el piano, el coche) quedan más cerca del fondo que el
-propio ruido del fondo, con lo que ningún umbral los separa. Al final juega a favor: una
-casilla ocupada por un mueble se distingue de una libre de un vistazo, que es información de
-juego.
+Lo importante del mobiliario: **son siluetas recortadas, no baldosas**. El objeto se recorta por
+su contorno y se centra en un cuadrado transparente, así que el suelo de la habitación asoma a
+su alrededor y no hace falta echar color por encima del mueble.
+
+La primera versión sí fueron baldosas opacas, porque las láminas llegaron sin canal alfa y los
+objetos oscuros no se separaban del fondo oscuro ni con umbral. Al rehacerlas con fondo
+transparente eso dejó de ser un problema, y con ello se arregló el fallo de verdad: partiendo
+por la línea de la rejilla, **la celda de un mueble se comía el borde del de al lado**, porque
+los objetos están dibujados más grandes que su celda nominal. Cinco pares llegan a solaparse
+—el banco de trabajo pisa 122 × 35 px del recuadro de la estatua—, así que ni recortando por el
+contorno del objeto basta con el rectángulo: hay que enmascarar. Ver `scripts/recortar-lamina.ts`.
 
 Los muebles en los que cabe una persona (la cama, el sofá, la butaca, la bañera, y todo lo del
 suelo) se dibujan algo más tenues, porque encima de ellos van a caer retratos y marcas.
@@ -50,8 +54,13 @@ npm run recortar -- muebles laminas/mobiliario-b.png escritorio caja_fuerte ... 
 Los ids van en orden de lectura. Conviene mirar la lámina antes de fiarse de que el generador
 respetó el orden pedido.
 
+**Una lámina de mobiliario nueva tiene que venir con fondo transparente**: el recortador aborta
+si no encuentra canal alfa, y también si alguna de las 15 casillas se queda sin ningún objeto,
+que es la señal de que la rejilla no encaja con esa lámina.
+
 `laminas/descartadas/` guarda la primera versión de la lámina A, que salió apaisada (1536×1024)
-en vez de cuadrada; se sustituyó por `mobiliario-a2.png`.
+en vez de cuadrada, y `laminas/descartadas/opacas/` las cinco de mobiliario sin canal alfa, que
+son las que obligaban a recortar por rejilla.
 
 ## Personajes
 
@@ -74,7 +83,7 @@ Recortados de `laminas/personajes-{1,2,3}.png`, rejilla 2x2.
 
 ## Mobiliario
 
-Recortado de `laminas/mobiliario-{a2,b,c,d,e}.png`, rejilla 5x3: cada fila es una habitacion.
+Recortado de `laminas/mobiliario-{a,b,c,d,e}.png`, rejilla 5x3: cada fila es una habitacion.
 
 | Fichero | Mueble | ¿Cabe una persona? |
 |---|---|---|

@@ -105,9 +105,11 @@ export function Retrato({
 }
 
 /**
- * Baldosa de mueble. El arte son ilustraciones cuadradas con fondo oscuro opaco que llenan la
- * casilla entera, así que el respaldo imita ese formato: baldosa oscura con el pictograma
- * centrado y pequeño, en vez de un emoji gigante.
+ * Silueta de mueble. El arte son ilustraciones recortadas por su contorno, centradas en un
+ * cuadrado transparente: el objeto flota sobre el suelo de la habitación, no lo tapa.
+ *
+ * El respaldo va también sin fondo, para que un mueble al que le falte el PNG no cante como un
+ * recuadro oscuro entre siluetas.
  */
 export function IconoMueble({ id, className = '' }: { id: string; className?: string }) {
   const m = mueble(id);
@@ -116,15 +118,14 @@ export function IconoMueble({ id, className = '' }: { id: string; className?: st
       carpeta="muebles"
       id={id}
       alt={m.nombre}
-      className={`h-full w-full object-cover ${className}`}
+      className={`h-full w-full object-contain ${className}`}
       respaldo={
         <svg
           viewBox="0 0 100 100"
-          preserveAspectRatio="xMidYMid slice"
+          preserveAspectRatio="xMidYMid meet"
           className={`h-full w-full ${className}`}
           aria-hidden
         >
-          <rect width="100" height="100" fill="#0d0c0a" />
           <text x="50" y="53" textAnchor="middle" dominantBaseline="central" fontSize="46">
             {m.icono}
           </text>
