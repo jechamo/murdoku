@@ -2,7 +2,7 @@
 
 Generador web de **Murdokus**: el pasatiempo de Manuel Garand que cruza el sudoku con el
 Cluedo. Un plano repartido en habitaciones amuebladas, un cadáver, unos cuantos sospechosos y
-una lista de declaraciones. Hay que colocar a cada uno en su casilla y señalar al culpable.
+una lista de declaraciones. Hay que colocar a cada uno en su casilla y señalar al culpable
 
 Casos infinitos de 6×6 a 8×8, en tres dificultades, generados en el navegador.
 
