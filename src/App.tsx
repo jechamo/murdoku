@@ -3,6 +3,7 @@ import { aConOficio, capitalizar, personaje } from './data/cast';
 import { NOMBRE_DIFICULTAD } from './engine/types';
 import { BarraSospechosos, Coartadas, FichasSospechosos, FichaVictima } from './ui/Dossier';
 import { Controles } from './ui/Controles';
+import { Inventario } from './ui/Inventario';
 import { Pistas } from './ui/Pistas';
 import { Tablero } from './ui/Tablero';
 import { CapaFinal } from './ui/Veredicto';
@@ -152,6 +153,7 @@ export function App() {
           <div className="ficha p-3 sm:p-4">
             <Tablero />
           </div>
+          <Inventario />
           <ComoSeJuega />
         </div>
 

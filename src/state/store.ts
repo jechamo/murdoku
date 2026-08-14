@@ -53,8 +53,15 @@ type Estado = Instantanea & {
   ayuda: Paso | null;
   /** Sospechosos señalados por el botón de comprobar. */
   errores: string[];
+  /**
+   * Casilla que el inventario está señalando en el plano. En táctil no hay ratón, así que el
+   * nombre de un mueble no se puede consultar pasando por encima: se toca en la lista y se
+   * enciende su casilla.
+   */
+  focoMueble: Celda | null;
 
   nuevoCaso: (opciones?: OpcionesCaso) => void;
+  mirarMueble: (celda: Celda | null) => void;
   volverAlMenu: () => void;
   reiniciar: () => void;
   cambiarModo: (modo: Modo) => void;
@@ -126,6 +133,7 @@ export const useJuego = create<Estado>((set, get) => ({
   acusado: null,
   ayuda: null,
   errores: [],
+  focoMueble: null,
 
   nuevoCaso: (opciones) => {
     // El caso se genera dentro del revelado: así la transición se ve entera aunque generar
@@ -150,10 +158,13 @@ export const useJuego = create<Estado>((set, get) => ({
           acusado: null,
           ayuda: null,
           errores: [],
+          focoMueble: null,
         });
       },
     );
   },
+
+  mirarMueble: (celda) => set((s) => ({ focoMueble: s.focoMueble === celda ? null : celda })),
 
   volverAlMenu: () => set({ pantalla: 'menu', fase: 'jugando', acusado: null }),
 

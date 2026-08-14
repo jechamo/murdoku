@@ -22,6 +22,7 @@ export function Tablero() {
     confirmados,
     ayuda,
     errores,
+    focoMueble,
     alternarCandidato,
     alternarDescarte,
     confirmar,
@@ -121,7 +122,7 @@ export function Tablero() {
                     !tachada &&
                     (candidatos[seleccionado] ?? []).includes(celda)
                   }
-                  resaltada={ayuda?.celda === celda}
+                  resaltada={ayuda?.celda === celda || focoMueble === celda}
                   error={ocupante !== null && errores.includes(ocupante)}
                   onMarcar={() => {
                     if (!seleccionado) return;

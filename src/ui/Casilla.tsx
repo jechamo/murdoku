@@ -1,4 +1,6 @@
-import { personaje } from '../data/cast';
+import { capitalizar, personaje } from '../data/cast';
+// El prop de la casilla se llama `mueble`, así que el catálogo entra con otro nombre.
+import { mueble as datosMueble } from '../data/furniture';
 import { Retrato, IconoMueble } from './Sprite';
 import { VICTIMA, type Celda } from '../engine/types';
 
@@ -84,6 +86,13 @@ export function Casilla(props: PropsCasilla) {
   const jugable = !bloqueada && !esVictima && !tachada;
   const interactiva = jugable && seleccionado !== null;
 
+  // Qué mueble hay y si cabe alguien en él. En el tablero solo se ve el dibujo, pero su nombre
+  // es el que usan las pistas, y que admita persona o no es la regla que más despista.
+  const m = mueble ? datosMueble(mueble) : null;
+  const detalleMueble = m
+    ? `${capitalizar(m.nombre)} · ${m.ocupable ? 'cabe alguien' : 'no cabe nadie'}`
+    : null;
+
   // Las paredes entre habitaciones se dibujan gruesas y claras; las divisiones internas,
   // apenas insinuadas. Es lo que hace legible el plano de un vistazo.
   // El muro es ahora la señal principal de dónde empieza y acaba una estancia, porque el color
@@ -94,6 +103,9 @@ export function Casilla(props: PropsCasilla) {
   return (
     <div
       className="relative aspect-square select-none overflow-hidden"
+      // El título va aquí y no en el botón porque el botón se deshabilita en cuanto la casilla
+      // deja de admitir marcas, y un botón deshabilitado no llega a mostrarlo.
+      title={[`${etiqueta} · ${nombreHabitacion}`, detalleMueble].filter(Boolean).join(' · ')}
       style={{
         containerType: 'size',
         borderTop: borde(bordes.arriba),
@@ -243,7 +255,7 @@ export function Casilla(props: PropsCasilla) {
                     ${interactiva ? 'cursor-pointer hover:bg-papel-100/10' : 'cursor-default'}`}
         aria-label={
           `Casilla ${etiqueta}, ${nombreHabitacion}` +
-          (bloqueada ? ', ocupada por un mueble' : '') +
+          (detalleMueble ? `, ${detalleMueble}` : '') +
           (esVictima ? ', escena del crimen' : '') +
           (ocupante ? `, aquí está ${personaje(ocupante).nombre}` : '') +
           (candidatos.length > 0
