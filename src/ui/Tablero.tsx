@@ -138,9 +138,11 @@ function Leyenda({ habitaciones }: { habitaciones: { nombre: string; color: stri
     <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
       {habitaciones.map((h) => (
         <li key={h.nombre} className="flex items-center gap-1.5 text-xs text-papel-300">
+          {/* La muestra se pinta con la MISMA alfa que la casilla, sobre el mismo fondo oscuro:
+              antes iba al 60% y el color de la leyenda no se parecía al del tablero. */}
           <span
-            className="h-3 w-3 rounded-sm border border-papel-400/40"
-            style={{ background: tinte(h.color, 0.6) }}
+            className="h-3.5 w-3.5 rounded-sm border border-papel-400/30 bg-tinta-950"
+            style={{ boxShadow: `inset 0 0 0 99px ${tinte(h.color, 0.28)}` }}
           />
           {h.nombre}
         </li>

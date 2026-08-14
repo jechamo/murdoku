@@ -55,24 +55,10 @@
            focus-visible:outline-none focus-visible:shadow-foco;
   }
 
-  /* Fila o columna ya resuelta: se retira de juego con una trama roja suave. */
-  .cinta-tachada {
-    background-image: repeating-linear-gradient(
-      135deg,
-      rgba(198, 47, 38, 0.24) 0 4px,
-      transparent 4px 15px
-    );
-  }
-
   /*
-   * Casilla llena de muebles. Deliberadamente NO es una trama de rayas: esa lectura ya está
-   * ocupada por las filas tachadas, y confundir "aquí no cabe nadie" con "esta fila ya está"
-   * es el peor error que puede cometer este tablero.
+   * Una fila o columna resuelta se apaga; no se raya. La trama la lleva ahora solo la cabecera
+   * de fila y de columna, que se tachan. Ver el comentario largo en Casilla.tsx.
    */
-  .casilla-bloqueada {
-    background-color: rgba(6, 6, 8, 0.62);
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.55), inset 0 0 14px rgba(0, 0, 0, 0.65);
-  }
 }
 
 /* Quien prefiera menos movimiento, que no lo tenga. */

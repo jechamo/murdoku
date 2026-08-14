@@ -83,46 +83,58 @@ export function Casilla(props: PropsCasilla) {
   // Las paredes entre habitaciones se dibujan gruesas y claras; las divisiones internas,
   // apenas insinuadas. Es lo que hace legible el plano de un vistazo.
   const borde = (pared: boolean) =>
-    pared ? '2.5px solid rgba(244,239,228,0.62)' : '1px solid rgba(255,255,255,0.06)';
+    pared ? '3px solid rgba(244,239,228,0.78)' : '1px solid rgba(255,255,255,0.05)';
 
   return (
     <div
-      className="relative aspect-square select-none"
+      className="relative aspect-square select-none overflow-hidden"
       style={{
         containerType: 'size',
-        background: tinte(colorHabitacion, tachada ? 0.12 : 0.28),
         borderTop: borde(bordes.arriba),
         borderLeft: borde(bordes.izquierda),
         borderRight: bordes.derecha ? borde(true) : 'none',
         borderBottom: bordes.abajo ? borde(true) : 'none',
       }}
     >
-      {bloqueada && <div className="casilla-bloqueada absolute inset-0" aria-hidden />}
+      {/*
+       * Escenografía de la casilla: habitación y mobiliario. Va toda dentro de una capa propia
+       * porque cuando la fila o la columna quedan resueltas basta con apagar esta capa —
+       * desaturada y a oscuras— y todo lo que se dibuje después (el cadáver, un sospechoso
+       * confirmado) sigue a plena luz por delante.
+       *
+       * Apagar en vez de rayar es deliberado: con media rejilla resuelta, una trama roja sobre
+       * el 80% del tablero convertía en lo más ruidoso de la pantalla justo la parte que ya no
+       * importa, y tapaba las habitaciones, que son información hasta el último momento.
+       */}
+      <div
+        className="pointer-events-none absolute inset-0 transition-[filter] duration-300"
+        style={{
+          background: tinte(colorHabitacion, 0.28),
+          // Apagada, pero no negra: la habitación tiene que seguir distinguiéndose en las
+          // líneas ya resueltas, porque el asesino se decide por quién comparte estancia con
+          // la víctima y las habitaciones cruzan medio tablero.
+          filter: tachada && !esVictima ? 'grayscale(0.55) brightness(0.58)' : undefined,
+        }}
+        aria-hidden
+      >
+        {/*
+         * El mueble no es un iconito: es una baldosa ilustrada que llena la casilla. Los que
+         * ocupan la casilla van a plena opacidad —así una casilla donde no cabe nadie se
+         * distingue de un vistazo—, y los elementos de suelo quedan tenues, porque encima de
+         * ellos sí van personajes y marcas.
+         */}
+        {mueble && (
+          <div className={`absolute inset-0 ${bloqueada ? '' : 'opacity-45'}`}>
+            <IconoMueble id={mueble} />
+          </div>
+        )}
 
-      {/* El mobiliario ambienta, no protagoniza: pequeño y apagado para que las marcas de
-          deducción se lean por encima sin competir. */}
-      {mueble && (
-        <div
-          className={`pointer-events-none absolute inset-[20%] ${
-            bloqueada ? 'opacity-85' : 'opacity-40'
-          }`}
-        >
-          <IconoMueble id={mueble} />
-        </div>
-      )}
-
-      {/* Fila o columna resuelta: se apaga la casilla para que el ojo la descarte sola, y
-          encima va la trama roja. Lo que se coloque después (un sospechoso confirmado) queda
-          por delante del velo y sigue brillando. */}
-      {tachada && !esVictima && (
-        <>
-          <div className="pointer-events-none absolute inset-0 bg-tinta-950/60" aria-hidden />
-          <div
-            className="cinta-tachada pointer-events-none absolute inset-0 animate-tachar"
-            aria-hidden
-          />
-        </>
-      )}
+        {/* Tinte de habitación por encima de la ilustración: sin esto, una casilla amueblada
+            perdería su color de región y el plano dejaría de leerse por zonas. */}
+        {mueble && bloqueada && (
+          <div className="absolute inset-0" style={{ background: tinte(colorHabitacion, 0.34) }} />
+        )}
+      </div>
 
       {esVictima && (
         <>

@@ -96,30 +96,6 @@ export function Controles() {
 
   return (
     <div className="space-y-4">
-      <Grupo titulo="Nuevo caso">
-        <div className="space-y-2">
-          <Segmentos
-            etiqueta="Tamaño del plano"
-            opciones={TAMANOS.map((t) => ({ valor: t, texto: `${t}×${t}` }))}
-            valor={tamano}
-            onCambio={setTamano}
-          />
-          <Segmentos
-            etiqueta="Dificultad"
-            opciones={DIFICULTADES.map((d) => ({ valor: d, texto: NOMBRE_DIFICULTAD[d] }))}
-            valor={dificultad}
-            onCambio={setDificultad}
-          />
-          <button
-            type="button"
-            className="boton-primario w-full"
-            onClick={() => nuevoCaso({ n: tamano, dificultad })}
-          >
-            Investigar otro caso
-          </button>
-        </div>
-      </Grupo>
-
       <Grupo titulo="Lápiz">
         <Segmentos
           etiqueta="Modo del lápiz"
@@ -208,6 +184,35 @@ export function Controles() {
           </button>
         </div>
       )}
+
+      {/*
+       * El generador va al final y en secundario a propósito. Es el botón destructivo —tira la
+       * partida en curso— y estaba arriba del todo en rojo primario, robándole el sitio a
+       * «Acusar», que es el único remate del caso y debe ser el único rojo de la columna.
+       */}
+      <Grupo titulo="Empezar otro caso">
+        <div className="space-y-2">
+          <Segmentos
+            etiqueta="Tamaño del plano"
+            opciones={TAMANOS.map((t) => ({ valor: t, texto: `${t}×${t}` }))}
+            valor={tamano}
+            onCambio={setTamano}
+          />
+          <Segmentos
+            etiqueta="Dificultad"
+            opciones={DIFICULTADES.map((d) => ({ valor: d, texto: NOMBRE_DIFICULTAD[d] }))}
+            valor={dificultad}
+            onCambio={setDificultad}
+          />
+          <button
+            type="button"
+            className="boton-secundario w-full"
+            onClick={() => nuevoCaso({ n: tamano, dificultad })}
+          >
+            Investigar otro caso
+          </button>
+        </div>
+      </Grupo>
 
       <Grupo titulo="Compartir este caso">
         <button
