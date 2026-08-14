@@ -26,7 +26,11 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+      # enablement: true crea el sitio de Pages si aún no existe, en vez de exigir que alguien
+      # lo active antes a mano en los ajustes del repositorio.
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
