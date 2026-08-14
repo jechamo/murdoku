@@ -4,11 +4,12 @@ on:
   push:
     # El entorno `github-pages` trae de serie una regla que solo permite desplegar desde la
     # rama por defecto del repositorio, y aquí la rama por defecto quedó siendo la de trabajo
-    # (fue la primera que se empujó al repo vacío), no `main`. Por eso los push a `main` se
-    # rechazaban con "Branch main is not allowed to deploy to github-pages".
+    # (fue la primera que se empujó al repo vacío), no `main`.
     #
-    # Se disparan las dos mientras dure esa situación. Cuando la rama por defecto pase a ser
-    # `main` (Settings -> General -> Default branch), sobra la segunda.
+    # Cada push actualiza las dos ramas, así que saltan dos tiradas. Se compila y se pasan los
+    # tests en las dos, pero publicar solo publica la rama por defecto, sea cual sea (ver el
+    # `if` del job `deploy`): así esto sigue funcionando el día que la rama por defecto pase a
+    # ser `main`, sin tocar nada. Entonces sobrará la segunda rama de esta lista.
     branches: [main, claude/murdocku-online-hpio37]
   workflow_dispatch:
 
@@ -17,8 +18,11 @@ permissions:
   pages: write
   id-token: write
 
+# Por rama, no global: con un único grupo las dos tiradas del mismo push se cancelaban entre
+# ellas, y la que sobrevivía era justo la que el entorno rechaza. El despliegue de verdad no
+# corre riesgo de solaparse, porque solo una rama llega al job `deploy`.
 concurrency:
-  group: pages
+  group: pages-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -47,6 +51,9 @@ jobs:
 
   deploy:
     needs: build
+    # Solo publica la rama por defecto, que es la única que el entorno `github-pages` admite.
+    # La otra se queda en compilar y pasar los tests, que como señal de CI ya vale.
+    if: github.ref_name == github.event.repository.default_branch
     runs-on: ubuntu-latest
     environment:
       name: github-pages
