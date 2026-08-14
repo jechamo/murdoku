@@ -1,26 +1,87 @@
 /** Tipos compartidos por todo el motor. El motor no importa nada de React. */
 
-export const N_MIN = 6;
+export const N_MIN = 4;
 export const N_MAX = 8;
 
 /** Índice plano de casilla: fila * n + columna. */
 export type Celda = number;
 
-export type Dificultad = 'facil' | 'medio' | 'dificil';
+export type Dificultad = 'aprendiz' | 'facil' | 'medio' | 'dificil';
 
-export const DIFICULTADES: Dificultad[] = ['facil', 'medio', 'dificil'];
+export const DIFICULTADES: Dificultad[] = ['aprendiz', 'facil', 'medio', 'dificil'];
 
 export const NOMBRE_DIFICULTAD: Record<Dificultad, string> = {
+  aprendiz: 'Aprendiz',
   facil: 'Fácil',
   medio: 'Medio',
   dificil: 'Difícil',
 };
 
+/**
+ * Perfil de un nivel. La dificultad no es solo "qué técnica hace falta": para alguien que
+ * empieza pesa más **de qué hablan las pistas**. «Estaba junto a la nevera» es mirar el plano;
+ * «estaba a 5 pasos de la víctima» es una abstracción. Por eso cada nivel limita también el
+ * vocabulario.
+ */
+export type PerfilDificultad = {
+  /** Técnica deductiva más avanzada que se le va a exigir al jugador. */
+  nivel: 1 | 2 | 3 | 4;
+  /** Tipos de pista admitidos, o null para todos. */
+  vocabulario: TipoPista[] | null;
+  /** Si es true, la casilla del cadáver se da siempre; nunca hay que deducirla. */
+  cadaverSiempreALaVista: boolean;
+  /**
+   * Si es true, el caso tiene que necesitar **exactamente** esa técnica, no menos.
+   *
+   * En los niveles de arriba importa: un «difícil» que se resuelve con singles de sudoku no es
+   * difícil. Abajo no, porque lo que gradúa no es la técnica —Aprendiz y Fácil comparten
+   * techo— sino el vocabulario y el tamaño del plano.
+   */
+  nivelExacto: boolean;
+  /** Edad orientativa, para el menú. */
+  desde: number;
+};
+
+/** Pistas que se leen mirando el plano, sin cuentas ni comparaciones. */
+const VOCABULARIO_CONCRETO: TipoPista[] = [
+  'habitacion',
+  'juntoAMueble',
+  'enMueble',
+  'mismaHabitacion',
+  'aSolas',
+];
+
+export const PERFILES: Record<Dificultad, PerfilDificultad> = {
+  aprendiz: {
+    nivel: 2,
+    vocabulario: VOCABULARIO_CONCRETO,
+    cadaverSiempreALaVista: true,
+    nivelExacto: false,
+    desde: 7,
+  },
+  facil: {
+    nivel: 2,
+    vocabulario: [...VOCABULARIO_CONCRETO, 'esquina', 'perimetro', 'recuento', 'noEnFila', 'noEnColumna'],
+    cadaverSiempreALaVista: true,
+    nivelExacto: false,
+    desde: 10,
+  },
+  medio: { nivel: 3, vocabulario: null, cadaverSiempreALaVista: false, nivelExacto: true, desde: 13 },
+  dificil: {
+    nivel: 4,
+    vocabulario: null,
+    cadaverSiempreALaVista: false,
+    nivelExacto: true,
+    desde: 16,
+  },
+};
+
 /** Nivel de técnica deductiva que hace falta para cerrar la rejilla. */
 export const NIVEL_DE_DIFICULTAD: Record<Dificultad, 1 | 2 | 3 | 4> = {
-  facil: 2,
-  medio: 3,
-  dificil: 4,
+  aprendiz: PERFILES.aprendiz.nivel,
+  facil: PERFILES.facil.nivel,
+  medio: PERFILES.medio.nivel,
+  dificil: PERFILES.dificil.nivel,
 };
 
 export function fila(celda: Celda, n: number): number {

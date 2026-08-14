@@ -75,6 +75,7 @@ export function Controles() {
     pedirAyuda,
     aplicarAyuda,
     abrirAcusacion,
+    volverAlMenu,
   } = useJuego();
 
   const [tamano, setTamano] = useState<number>(caso.n);
@@ -210,6 +211,9 @@ export function Controles() {
             onClick={() => nuevoCaso({ n: tamano, dificultad })}
           >
             Investigar otro caso
+          </button>
+          <button type="button" className="boton-secundario w-full" onClick={volverAlMenu}>
+            Volver al menú
           </button>
         </div>
       </Grupo>

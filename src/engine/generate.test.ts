@@ -24,13 +24,14 @@ import {
   fila,
   DIFICULTADES,
   NIVEL_DE_DIFICULTAD,
+  PERFILES,
   type Caso,
   type Dificultad,
 } from './types';
 
-/** 20 semillas × 3 tamaños × 3 dificultades = 180 casos. */
-const SEMILLAS = Array.from({ length: 20 }, (_, i) => `S${i}`);
-const TAMANOS = [6, 7, 8];
+/** 10 semillas × 5 tamaños × 4 niveles = 200 casos. */
+const SEMILLAS = Array.from({ length: 10 }, (_, i) => `S${i}`);
+const TAMANOS = [4, 5, 6, 7, 8];
 
 const CASOS: { caso: Caso; etiqueta: string }[] = [];
 for (const n of TAMANOS) {
@@ -45,8 +46,8 @@ for (const n of TAMANOS) {
 }
 
 describe('el generador produce casos válidos', () => {
-  it('genera los 180 casos del lote', () => {
-    expect(CASOS).toHaveLength(180);
+  it('genera los 200 casos del lote', () => {
+    expect(CASOS).toHaveLength(200);
   });
 
   it('la solución declarada cumple todas las pistas emitidas', () => {
@@ -75,9 +76,34 @@ describe('el generador produce casos válidos', () => {
 
   it('la dificultad pedida es la que realmente hace falta', () => {
     for (const { caso, etiqueta } of CASOS) {
-      expect(nivelRequerido(caso.pistas, ctxDe(caso)), etiqueta).toBe(
-        NIVEL_DE_DIFICULTAD[caso.dificultad],
-      );
+      const perfil = PERFILES[caso.dificultad];
+      const nivel = nivelRequerido(caso.pistas, ctxDe(caso))!;
+      if (perfil.nivelExacto) {
+        // Arriba importa la igualdad: un «difícil» que se resuelve con singles no es difícil.
+        expect(nivel, etiqueta).toBe(perfil.nivel);
+      } else {
+        // Abajo lo que gradúa es el vocabulario y el tamaño, no la técnica.
+        expect(nivel, etiqueta).toBeLessThanOrEqual(perfil.nivel);
+      }
+    }
+  });
+
+  it('los niveles de iniciación solo usan pistas que se leen mirando el plano', () => {
+    // Contar pasos o comparar distancias es justo lo que no se le puede pedir a quien empieza.
+    for (const { caso, etiqueta } of CASOS) {
+      const perfil = PERFILES[caso.dificultad];
+      if (!perfil.vocabulario) continue;
+      for (const pista of caso.pistas) {
+        expect(perfil.vocabulario, `${etiqueta}: ${redactar(pista)}`).toContain(pista.tipo);
+      }
+    }
+  });
+
+  it('los niveles de iniciación siempre dan situado el cadáver', () => {
+    for (const { caso, etiqueta } of CASOS) {
+      if (PERFILES[caso.dificultad].cadaverSiempreALaVista) {
+        expect(caso.victimaRevelada, etiqueta).toBe(true);
+      }
     }
   });
 
@@ -252,6 +278,7 @@ describe('la semilla determina el caso', () => {
     }
     expect(leerCodigo('basura')).toBeNull();
     expect(leerCodigo('9x9-facil-ABC123')).toBeNull();
+    expect(leerCodigo('4x4-aprendiz-ABC123')).not.toBeNull();
     expect(leerCodigo('6x7-facil-ABC123')).toBeNull();
   });
 });

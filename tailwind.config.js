@@ -51,6 +51,14 @@ export default {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.45' },
         },
+        girar: {
+          from: { transform: 'rotate(0deg)' },
+          to: { transform: 'rotate(360deg)' },
+        },
+        colgar: {
+          '0%, 100%': { transform: 'rotate(var(--giro)) translateY(0)' },
+          '50%': { transform: 'rotate(var(--giro)) translateY(-6px)' },
+        },
       },
       animation: {
         tachar: 'tachar 320ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards',

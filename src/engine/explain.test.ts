@@ -10,7 +10,7 @@ import { actoresAColocar, generarCaso, posicionesCompletas } from './generate';
 import { colocacionesErroneas, detallarPaso, estaResuelto, siguientePaso } from './explain';
 import { DIFICULTADES, type Asignacion } from './types';
 
-const CASOS = [6, 7, 8].flatMap((n) =>
+const CASOS = [4, 5, 6, 7, 8].flatMap((n) =>
   DIFICULTADES.flatMap((dificultad) =>
     ['E1', 'E2', 'E3', 'E4'].map((semilla) => ({
       caso: generarCaso({ semilla, n, dificultad }),

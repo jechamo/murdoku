@@ -15,11 +15,18 @@ import { emparejamientoPerfecto, esContigua, todasLasCeldas } from './grid';
 import type { Rng } from './rng';
 import type { Celda, Plano } from './types';
 
-/** Número de habitaciones según el tamaño del tablero. */
+/**
+ * Número de habitaciones según el tamaño del tablero.
+ *
+ * Toda estancia es un rectángulo de 2×2 como mínimo, así que en un plano de n×n no caben más
+ * de n²/4: pedir más sería pedir imposibles. En un 4×4 entran exactamente 4.
+ */
 function cuantasHabitaciones(rng: Rng, n: number): number {
-  if (n <= 6) return 4 + rng.entero(2); // 4-5
-  if (n === 7) return 5 + rng.entero(2); // 5-6
-  return 5 + rng.entero(3); // 5-7
+  const techo = Math.floor((n * n) / 4);
+  if (n <= 5) return Math.min(4, techo);
+  if (n === 6) return Math.min(4 + rng.entero(2), techo);
+  if (n === 7) return Math.min(5 + rng.entero(2), techo);
+  return Math.min(5 + rng.entero(3), techo);
 }
 
 type Rect = { x: number; y: number; w: number; h: number };
@@ -36,6 +43,8 @@ type Rect = { x: number; y: number; w: number; h: number };
  * estrechas: ninguna habitación baja de 2 casillas de lado.
  */
 function repartirRegiones(rng: Rng, n: number, k: number): number[] | null {
+  // Devuelve el reparto y, con él, **cuántas piezas han salido de verdad**: puede ser menos de
+  // las pedidas si no caben. Quien llama tiene que quedarse con esa cifra, no con la pedida.
   const LADO_MINIMO = 2;
   let piezas: Rect[] = [{ x: 0, y: 0, w: n, h: n }];
 
@@ -78,6 +87,11 @@ function repartirRegiones(rng: Rng, n: number, k: number): number[] | null {
   });
   if (region.some((r) => r === -1)) return null;
   return region;
+}
+
+/** Cuántas regiones distintas hay en un reparto. */
+function cuantasRegiones(region: readonly number[]): number {
+  return new Set(region).size;
 }
 
 /** Coloca mobiliario temático y garantiza que el plano siga admitiendo una colocación válida. */
@@ -141,7 +155,10 @@ export function generarPlano(rng: Rng, n: number): Plano | null {
   const region = repartirRegiones(rng, n, k);
   if (region === null) return null;
 
-  const idsHabitacion = rng.baraja(escenario.habitaciones).slice(0, k);
+  // Se nombran tantas habitaciones como piezas hayan salido, no como se pidieron. Si se usara
+  // `k` a secas, un plano pequeño declararía estancias sin ninguna casilla, y a la primera que
+  // alguien pidiera su rectángulo saldría un Math.min() sobre una lista vacía.
+  const idsHabitacion = rng.baraja(escenario.habitaciones).slice(0, cuantasRegiones(region));
   const { muebleDe, bloqueada } = amueblar(rng, n, region, idsHabitacion);
 
   const habitacionDe = region.map((r) => idsHabitacion[r]!);

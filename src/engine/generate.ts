@@ -22,7 +22,10 @@ import {
 } from './solver';
 import { crearRng, semillaAleatoria, type Rng } from './rng';
 import {
-  NIVEL_DE_DIFICULTAD,
+  DIFICULTADES,
+  N_MAX,
+  N_MIN,
+  PERFILES,
   VICTIMA,
   type Asignacion,
   type Caso,
@@ -180,7 +183,8 @@ export function generarCaso(opciones: OpcionesCaso = {}): Caso {
   const semilla = opciones.semilla ?? semillaAleatoria();
   const n = opciones.n ?? 7;
   const dificultad = opciones.dificultad ?? 'medio';
-  const nivelObjetivo = NIVEL_DE_DIFICULTAD[dificultad];
+  const perfil = PERFILES[dificultad];
+  const nivelObjetivo = perfil.nivel;
 
   const rng = crearRng(`${semilla}|${n}|${dificultad}`);
 
@@ -201,8 +205,9 @@ export function generarCaso(opciones: OpcionesCaso = {}): Caso {
 
     // La variante alterna: en unos casos se da la casilla del cadáver y en otros hay que
     // deducirla igual que las demás. Depende de la semilla, así que un mismo código de caso
-    // siempre trae la misma variante.
-    const victimaRevelada = rng.quiza(0.6);
+    // siempre trae la misma variante. En los niveles de iniciación no se oculta nunca: ya hay
+    // bastante que atender.
+    const victimaRevelada = perfil.cadaverSiempreALaVista || rng.quiza(0.6);
 
     const ctx: Contexto = {
       plano,
@@ -216,7 +221,14 @@ export function generarCaso(opciones: OpcionesCaso = {}): Caso {
       ? asignacion
       : { ...asignacion, [VICTIMA]: colocacion.victimaEn };
 
-    const banco = generarBanco(rng, ctx, asignacionCompleta);
+    // El vocabulario es la palanca que más se nota abajo: para quien empieza, «estaba junto a
+    // la nevera» es mirar el plano, mientras que «estaba a 5 pasos de la víctima» exige contar
+    // y comparar. Los niveles de iniciación se quedan solo con las pistas que se ven.
+    const bancoCompleto = generarBanco(rng, ctx, asignacionCompleta);
+    const banco = perfil.vocabulario
+      ? bancoCompleto.filter((p) => perfil.vocabulario!.includes(p.tipo))
+      : bancoCompleto;
+    if (banco.length === 0) continue;
 
     // En algo más de la mitad de los casos se intenta que entre una pista general, para que
     // el conjunto de casos tenga de las dos clases y no todas se parezcan.
@@ -252,7 +264,8 @@ export function generarCaso(opciones: OpcionesCaso = {}): Caso {
       if (!propagar(pistas, ctx, dom, 4)) continue;
       if (contarSoluciones(pistas, ctx, dom, 2) !== 1) continue;
 
-      if (nivel === nivelObjetivo) return caso;
+      const encaja = perfil.nivelExacto ? nivel === nivelObjetivo : nivel <= nivelObjetivo;
+      if (encaja) return caso;
       // Guarda el más parecido a la dificultad pedida por si ninguno acierta de pleno.
       if (mejor === null) mejor = caso;
       else {
@@ -305,11 +318,19 @@ export function codigoDeCaso(caso: Caso): string {
   return `${caso.n}x${caso.n}-${caso.dificultad}-${caso.semilla}`;
 }
 
+/**
+ * El patrón se arma desde la lista de niveles en vez de repetirlos a mano: al añadir
+ * «aprendiz» la versión escrita a pelo se quedó atrás y dejó de reconocer sus códigos.
+ */
+const PATRON_CODIGO = new RegExp(
+  `^(\\d)x\\1-(${DIFICULTADES.join('|')})-([A-Za-z0-9]{1,16})$`,
+);
+
 export function leerCodigo(codigo: string): OpcionesCaso | null {
-  const m = /^(\d)x\1-(facil|medio|dificil)-([A-Za-z0-9]{1,16})$/.exec(codigo.trim());
+  const m = PATRON_CODIGO.exec(codigo.trim());
   if (!m) return null;
   const n = Number(m[1]);
-  if (n < 6 || n > 8) return null;
+  if (n < N_MIN || n > N_MAX) return null;
   // La semilla se respeta tal cual: distinta caja, distinto caso.
   return { n, dificultad: m[2] as Dificultad, semilla: m[3]! };
 }

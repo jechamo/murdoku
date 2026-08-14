@@ -6,6 +6,8 @@ import { Controles } from './ui/Controles';
 import { Pistas } from './ui/Pistas';
 import { Tablero } from './ui/Tablero';
 import { CapaFinal } from './ui/Veredicto';
+import { Menu } from './ui/Menu';
+import { Revelado } from './ui/Revelado';
 import { useJuego } from './state/store';
 
 function Seccion({
@@ -118,7 +120,16 @@ function ComoSeJuega() {
 }
 
 export function App() {
-  const caso = useJuego((s) => s.caso);
+  const { caso, pantalla, generando } = useJuego();
+
+  if (pantalla === 'menu') {
+    return (
+      <>
+        <Menu />
+        <Revelado activo={generando} />
+      </>
+    );
+  }
 
   return (
     <div className="min-h-full">
@@ -163,6 +174,7 @@ export function App() {
 
       <BarraSospechosos />
       <CapaFinal />
+      <Revelado activo={generando} />
     </div>
   );
 }

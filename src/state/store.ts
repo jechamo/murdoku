@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+import { conRevelado } from '../ui/Revelado';
+
 import {
   actoresAColocar,
   codigoDeCaso,
@@ -29,6 +31,9 @@ type Instantanea = {
 
 export type Fase = 'jugando' | 'acusando' | 'veredicto';
 
+/** En qué pantalla está la aplicación. */
+export type Pantalla = 'menu' | 'jugando';
+
 /**
  * En escritorio se marca con el clic izquierdo y se descarta con el derecho. En táctil no hay
  * clic derecho fiable, así que hay un interruptor de modo.
@@ -37,6 +42,8 @@ export type Modo = 'marcar' | 'descartar';
 
 type Estado = Instantanea & {
   caso: Caso;
+  pantalla: Pantalla;
+  /** true mientras dura el revelado del caso nuevo. */
   generando: boolean;
   modo: Modo;
   seleccionado: string | null;
@@ -48,6 +55,7 @@ type Estado = Instantanea & {
   errores: string[];
 
   nuevoCaso: (opciones?: OpcionesCaso) => void;
+  volverAlMenu: () => void;
   reiniciar: () => void;
   cambiarModo: (modo: Modo) => void;
   seleccionar: (actor: string | null) => void;
@@ -100,12 +108,16 @@ function fijarUrl(caso: Caso): void {
   }
 }
 
-const casoInicial = generarCaso(casoDeLaUrl() ?? { n: 7, dificultad: 'medio' });
-fijarUrl(casoInicial);
+// Si el enlace ya trae un caso concreto, se entra directo al tablero: un enlace compartido
+// debe llevar al Murdoku, no a la portada. Si no, se abre el menú.
+const desdeUrl = casoDeLaUrl();
+const casoInicial = generarCaso(desdeUrl ?? { n: 6, dificultad: 'facil' });
+if (desdeUrl) fijarUrl(casoInicial);
 
 export const useJuego = create<Estado>((set, get) => ({
   ...VACIO,
   caso: casoInicial,
+  pantalla: desdeUrl ? 'jugando' : 'menu',
   generando: false,
   modo: 'marcar',
   seleccionado: null,
@@ -116,24 +128,34 @@ export const useJuego = create<Estado>((set, get) => ({
   errores: [],
 
   nuevoCaso: (opciones) => {
-    const anterior = get().caso;
-    const caso = generarCaso({
-      n: opciones?.n ?? anterior.n,
-      dificultad: opciones?.dificultad ?? anterior.dificultad,
-      semilla: opciones?.semilla,
-    });
-    fijarUrl(caso);
-    set({
-      ...VACIO,
-      caso,
-      seleccionado: null,
-      historial: [],
-      fase: 'jugando',
-      acusado: null,
-      ayuda: null,
-      errores: [],
-    });
+    // El caso se genera dentro del revelado: así la transición se ve entera aunque generar
+    // bloquee el hilo un instante.
+    conRevelado(
+      (activo) => set({ generando: activo }),
+      () => {
+        const anterior = get().caso;
+        const caso = generarCaso({
+          n: opciones?.n ?? anterior.n,
+          dificultad: opciones?.dificultad ?? anterior.dificultad,
+          semilla: opciones?.semilla,
+        });
+        fijarUrl(caso);
+        set({
+          ...VACIO,
+          caso,
+          pantalla: 'jugando',
+          seleccionado: null,
+          historial: [],
+          fase: 'jugando',
+          acusado: null,
+          ayuda: null,
+          errores: [],
+        });
+      },
+    );
   },
+
+  volverAlMenu: () => set({ pantalla: 'menu', fase: 'jugando', acusado: null }),
 
   reiniciar: () =>
     set({
