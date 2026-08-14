@@ -91,6 +91,18 @@ src/ui/       componentes
 src/state/    estado de la partida
 ```
 
+## Despliegue
+
+Cada push a `main` compila, pasa los tests y publica en GitHub Pages:
+**https://jechamo.github.io/murdoku/**
+
+Hay un paso único que hay que dar a mano la primera vez, en
+**Settings → Pages → Build and deployment → Source**, eligiendo **GitHub Actions**. Sin eso el
+workflow falla en `configure-pages` con `Get Pages site failed: Not Found`. No se puede
+automatizar: crear el sitio por API exige derechos de administración del repositorio, y el
+`GITHUB_TOKEN` de Actions no los tiene. Hecho eso, basta con relanzar el workflow desde la
+pestaña Actions.
+
 ## Imágenes
 
 El juego funciona sin ninguna imagen: mientras no exista el PNG se dibuja un marcador
