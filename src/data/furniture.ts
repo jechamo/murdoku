@@ -1,10 +1,17 @@
 /**
  * Catálogo de mobiliario.
  *
- * Dos clases, y la diferencia es la regla del juego:
- *  - `bloquea: true`  — el mueble llena la casilla. Nadie puede estar ahí.
- *  - `bloquea: false` — es algo del suelo (una alfombra, una baldosa suelta). Se puede pisar,
- *                       así que un personaje sí puede ocupar esa casilla.
+ * La distinción que importa es **si una persona puede estar ahí**, y no es la misma que
+ * "¿ocupa la casilla un mueble?". En los Murdokus del libro las pistas dicen «estaba sentada
+ * en una silla», «estaba sobre una cama», frente a «estaba junto a una estantería»: en un sofá,
+ * una cama o una butaca sí te colocas; en una estantería o una nevera, no, te pones al lado.
+ *
+ *  - `ocupable: true`  — se puede estar encima o dentro: camas, sofás, butacas, la bañera, el
+ *                        coche, y todo lo que es del suelo (alfombras, manchas, trampillas).
+ *  - `ocupable: false` — el mueble llena la casilla y nadie cabe: neveras, armarios, pianos.
+ *
+ * `prep` es la preposición con la que se redacta la ocupación: «en la butaca», «sobre la
+ * alfombra».
  *
  * Cada `id` aparece **como mucho una vez en todo el tablero**. Es lo que permite que una pista
  * como "junto al televisor" señale a una única casilla sin ambigüedad.
@@ -18,124 +25,148 @@ export type Mueble = {
   id: string;
   nombre: string;
   art: Articulo;
-  bloquea: boolean;
+  /** ¿Puede colocarse una persona en esta casilla? */
+  ocupable: boolean;
+  /** Preposición para la ocupación: "en la cama", "sobre la alfombra". */
+  prep: 'en' | 'sobre';
   /** Pictograma del placeholder mientras no haya PNG. */
   icono: string;
 };
 
-const M = (
+/** Mueble que llena la casilla: nadie puede estar ahí. */
+const lleno = (id: string, nombre: string, art: Articulo, icono: string): Mueble => ({
+  id,
+  nombre,
+  art,
+  ocupable: false,
+  prep: 'en',
+  icono,
+});
+
+/** Mueble en el que uno se sienta, se tumba o se mete. */
+const asiento = (
   id: string,
   nombre: string,
   art: Articulo,
-  bloquea: boolean,
   icono: string,
-): Mueble => ({ id, nombre, art, bloquea, icono });
+  prep: 'en' | 'sobre' = 'en',
+): Mueble => ({ id, nombre, art, ocupable: true, prep, icono });
+
+/** Elemento del suelo: se pisa. */
+const suelo = (id: string, nombre: string, art: Articulo, icono: string): Mueble => ({
+  id,
+  nombre,
+  art,
+  ocupable: true,
+  prep: 'sobre',
+  icono,
+});
 
 export const MOBILIARIO: Mueble[] = [
   // — Cocina
-  M('nevera', 'nevera', 'la', true, '🧊'),
-  M('fogones', 'fogones', 'los', true, '🔥'),
-  M('fregadero', 'fregadero', 'el', true, '🚰'),
-  M('alacena', 'alacena', 'la', true, '🥫'),
-  M('mancha_grasa', 'mancha de grasa', 'la', false, '🟤'),
+  lleno('nevera', 'nevera', 'la', '🧊'),
+  lleno('fogones', 'fogones', 'los', '🔥'),
+  lleno('fregadero', 'fregadero', 'el', '🚰'),
+  lleno('alacena', 'alacena', 'la', '🥫'),
+  suelo('mancha_grasa', 'mancha de grasa', 'la', '🟤'),
 
   // — Salón
-  M('sofa', 'sofá', 'el', true, '🛋️'),
-  M('televisor', 'televisor', 'el', true, '📺'),
-  M('chimenea', 'chimenea', 'la', true, '🔥'),
-  M('butaca', 'butaca', 'la', true, '💺'),
-  M('alfombra_persa', 'alfombra persa', 'la', false, '🟥'),
+  asiento('sofa', 'sofá', 'el', '🛋️'),
+  lleno('televisor', 'televisor', 'el', '📺'),
+  lleno('chimenea', 'chimenea', 'la', '🔥'),
+  asiento('butaca', 'butaca', 'la', '💺'),
+  suelo('alfombra_persa', 'alfombra persa', 'la', '🟥'),
 
   // — Dormitorio
-  M('cama', 'cama', 'la', true, '🛏️'),
-  M('armario', 'armario', 'el', true, '🚪'),
-  M('tocador', 'tocador', 'el', true, '🪞'),
-  M('mesilla', 'mesilla de noche', 'la', true, '🕯️'),
-  M('alfombra_piel', 'alfombra de piel', 'la', false, '⬜'),
+  asiento('cama', 'cama', 'la', '🛏️'),
+  lleno('armario', 'armario', 'el', '🚪'),
+  lleno('tocador', 'tocador', 'el', '🪞'),
+  lleno('mesilla', 'mesilla de noche', 'la', '🕯️'),
+  suelo('alfombra_piel', 'alfombra de piel', 'la', '⬜'),
 
   // — Estudio
-  M('escritorio', 'escritorio', 'el', true, '🗄️'),
-  M('caja_fuerte', 'caja fuerte', 'la', true, '🔐'),
-  M('globo', 'globo terráqueo', 'el', true, '🌍'),
-  M('archivador', 'archivador', 'el', true, '🗃️'),
-  M('alfombra_lectura', 'alfombra de lectura', 'la', false, '🟫'),
+  lleno('escritorio', 'escritorio', 'el', '🗄️'),
+  lleno('caja_fuerte', 'caja fuerte', 'la', '🔐'),
+  lleno('globo', 'globo terráqueo', 'el', '🌍'),
+  lleno('archivador', 'archivador', 'el', '🗃️'),
+  suelo('alfombra_lectura', 'alfombra de lectura', 'la', '🟫'),
 
   // — Biblioteca
-  M('estanteria', 'estantería', 'la', true, '📚'),
-  M('atril', 'atril', 'el', true, '📖'),
-  M('escalera_mano', 'escalera de mano', 'la', true, '🪜'),
-  M('vitrina', 'vitrina', 'la', true, '🏺'),
-  M('alfombra_raida', 'alfombra raída', 'la', false, '🟨'),
+  lleno('estanteria', 'estantería', 'la', '📚'),
+  lleno('atril', 'atril', 'el', '📖'),
+  lleno('escalera_mano', 'escalera de mano', 'la', '🪜'),
+  lleno('vitrina', 'vitrina', 'la', '🏺'),
+  suelo('alfombra_raida', 'alfombra raída', 'la', '🟨'),
 
   // — Baño
-  M('banera', 'bañera', 'la', true, '🛁'),
-  M('lavabo', 'lavabo', 'el', true, '🚿'),
-  M('espejo', 'espejo', 'el', true, '🪞'),
-  M('cesto_ropa', 'cesto de la ropa', 'el', true, '🧺'),
-  M('baldosa_suelta', 'baldosa suelta', 'la', false, '⬛'),
+  asiento('banera', 'bañera', 'la', '🛁'),
+  lleno('lavabo', 'lavabo', 'el', '🚿'),
+  lleno('espejo', 'espejo', 'el', '🪞'),
+  lleno('cesto_ropa', 'cesto de la ropa', 'el', '🧺'),
+  suelo('baldosa_suelta', 'baldosa suelta', 'la', '⬛'),
 
   // — Comedor
-  M('mesa_larga', 'mesa larga', 'la', true, '🍽️'),
-  M('aparador', 'aparador', 'el', true, '🍶'),
-  M('candelabro', 'candelabro', 'el', true, '🕯️'),
-  M('trinchero', 'trinchero', 'el', true, '🥄'),
-  M('alfombra_bordada', 'alfombra bordada', 'la', false, '🟧'),
+  lleno('mesa_larga', 'mesa larga', 'la', '🍽️'),
+  lleno('aparador', 'aparador', 'el', '🍶'),
+  lleno('candelabro', 'candelabro', 'el', '🕯️'),
+  lleno('trinchero', 'trinchero', 'el', '🥄'),
+  suelo('alfombra_bordada', 'alfombra bordada', 'la', '🟧'),
 
   // — Invernadero
-  M('palmera', 'palmera', 'la', true, '🌴'),
-  M('banco_piedra', 'banco de piedra', 'el', true, '🪨'),
-  M('fuente', 'fuente', 'la', true, '⛲'),
-  M('macetero', 'macetero', 'el', true, '🪴'),
-  M('charco', 'charco de agua', 'el', false, '💧'),
+  lleno('palmera', 'palmera', 'la', '🌴'),
+  asiento('banco_piedra', 'banco de piedra', 'el', '🪨'),
+  lleno('fuente', 'fuente', 'la', '⛲'),
+  lleno('macetero', 'macetero', 'el', '🪴'),
+  suelo('charco', 'charco de agua', 'el', '💧'),
 
   // — Sótano
-  M('caldera', 'caldera', 'la', true, '♨️'),
-  M('barriles', 'barriles', 'los', true, '🛢️'),
-  M('herramientas', 'herramientas', 'las', true, '🔧'),
-  M('arcon', 'arcón', 'el', true, '🧰'),
-  M('trampilla', 'trampilla', 'la', false, '🕳️'),
+  lleno('caldera', 'caldera', 'la', '♨️'),
+  lleno('barriles', 'barriles', 'los', '🛢️'),
+  lleno('herramientas', 'herramientas', 'las', '🔧'),
+  lleno('arcon', 'arcón', 'el', '🧰'),
+  suelo('trampilla', 'trampilla', 'la', '🕳️'),
 
   // — Pasillo
-  M('perchero', 'perchero', 'el', true, '🧥'),
-  M('reloj_pie', 'reloj de pie', 'el', true, '🕰️'),
-  M('cuadro', 'cuadro torcido', 'el', true, '🖼️'),
-  M('consola', 'consola de entrada', 'la', true, '🪑'),
-  M('felpudo', 'felpudo', 'el', false, '🟩'),
+  lleno('perchero', 'perchero', 'el', '🧥'),
+  lleno('reloj_pie', 'reloj de pie', 'el', '🕰️'),
+  lleno('cuadro', 'cuadro torcido', 'el', '🖼️'),
+  lleno('consola', 'consola de entrada', 'la', '🪑'),
+  suelo('felpudo', 'felpudo', 'el', '🟩'),
 
   // — Salón de música
-  M('piano', 'piano', 'el', true, '🎹'),
-  M('arpa', 'arpa', 'el', true, '🎵'),
-  M('gramola', 'gramola', 'la', true, '📻'),
-  M('atril_musica', 'atril de partituras', 'el', true, '🎼'),
-  M('tarima', 'tarima', 'la', false, '🟪'),
+  lleno('piano', 'piano', 'el', '🎹'),
+  lleno('arpa', 'arpa', 'el', '🎵'),
+  lleno('gramola', 'gramola', 'la', '📻'),
+  lleno('atril_musica', 'atril de partituras', 'el', '🎼'),
+  suelo('tarima', 'tarima', 'la', '🟪'),
 
   // — Sala de billar
-  M('mesa_billar', 'mesa de billar', 'la', true, '🎱'),
-  M('taquera', 'taquera', 'la', true, '🎳'),
-  M('mueble_bar', 'mueble bar', 'el', true, '🥃'),
-  M('diana', 'diana', 'la', true, '🎯'),
-  M('alfombra_verde', 'alfombra verde', 'la', false, '🟩'),
+  lleno('mesa_billar', 'mesa de billar', 'la', '🎱'),
+  lleno('taquera', 'taquera', 'la', '🎳'),
+  lleno('mueble_bar', 'mueble bar', 'el', '🥃'),
+  lleno('diana', 'diana', 'la', '🎯'),
+  suelo('alfombra_verde', 'alfombra verde', 'la', '🟩'),
 
   // — Desván
-  M('baules', 'baúles', 'los', true, '📦'),
-  M('maniqui', 'maniquí', 'el', true, '🧍'),
-  M('espejo_roto', 'espejo roto', 'el', true, '💔'),
-  M('jaula', 'jaula vacía', 'la', true, '🪤'),
-  M('tablon_suelto', 'tablón suelto', 'el', false, '🟫'),
+  asiento('baules', 'baúles', 'los', '📦', 'sobre'),
+  lleno('maniqui', 'maniquí', 'el', '🧍'),
+  lleno('espejo_roto', 'espejo roto', 'el', '💔'),
+  lleno('jaula', 'jaula vacía', 'la', '🪤'),
+  suelo('tablon_suelto', 'tablón suelto', 'el', '🟫'),
 
   // — Garaje
-  M('coche', 'coche', 'el', true, '🚗'),
-  M('banco_trabajo', 'banco de trabajo', 'el', true, '🔨'),
-  M('neumaticos', 'neumáticos', 'los', true, '🛞'),
-  M('gato_hidraulico', 'gato hidráulico', 'el', true, '⚙️'),
-  M('mancha_aceite', 'mancha de aceite', 'la', false, '⚫'),
+  asiento('coche', 'coche', 'el', '🚗'),
+  lleno('banco_trabajo', 'banco de trabajo', 'el', '🔨'),
+  lleno('neumaticos', 'neumáticos', 'los', '🛞'),
+  lleno('gato_hidraulico', 'gato hidráulico', 'el', '⚙️'),
+  suelo('mancha_aceite', 'mancha de aceite', 'la', '⚫'),
 
   // — Vestíbulo
-  M('escalinata', 'escalinata', 'la', true, '🪜'),
-  M('estatua', 'estatua', 'la', true, '🗿'),
-  M('paraguero', 'paragüero', 'el', true, '☂️'),
-  M('recibidor', 'mueble recibidor', 'el', true, '🗝️'),
-  M('felpudo_largo', 'felpudo largo', 'el', false, '🟥'),
+  asiento('escalinata', 'escalinata', 'la', '🪜'),
+  lleno('estatua', 'estatua', 'la', '🗿'),
+  lleno('paraguero', 'paragüero', 'el', '☂️'),
+  lleno('recibidor', 'mueble recibidor', 'el', '🗝️'),
+  suelo('felpudo_largo', 'felpudo largo', 'el', '🟥'),
 ];
 
 export const MUEBLES_POR_ID: Record<string, Mueble> = Object.fromEntries(
@@ -158,7 +189,11 @@ export function juntoA(m: Mueble): string {
   return m.art === 'el' ? `junto al ${m.nombre}` : `junto a ${m.art} ${m.nombre}`;
 }
 
-/** "sobre la alfombra persa". Solo tiene sentido con muebles que no bloquean. */
-export function sobre(m: Mueble): string {
-  return `sobre ${m.art} ${m.nombre}`;
+/**
+ * Cómo se dice que alguien está ocupando ese mueble: "en la butaca", "sobre la alfombra",
+ * "en el coche". Solo tiene sentido con muebles ocupables.
+ */
+export function ocupando(m: Mueble): string {
+  if (m.prep === 'sobre') return `sobre ${m.art} ${m.nombre}`;
+  return m.art === 'el' ? `en el ${m.nombre}` : `en ${m.art} ${m.nombre}`;
 }

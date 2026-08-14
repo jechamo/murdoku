@@ -2,7 +2,7 @@
  * Construcción del plano: reparto del tablero en habitaciones contiguas y amueblado.
  *
  * Invariantes que garantiza este módulo:
- *  - toda habitación es contigua y tiene al menos 3 casillas;
+ *  - toda habitación es un rectángulo de al menos 2×2, como en el plano de una casa;
  *  - cada `id` de mueble aparece como mucho una vez en todo el tablero (las pistas del tipo
  *    "junto al televisor" dependen de ello para no ser ambiguas);
  *  - queda al menos una colocación válida de n ocupantes, uno por fila y uno por columna,
@@ -10,7 +10,8 @@
  */
 
 import { ESCENARIOS, habitacion } from '../data/rooms';
-import { emparejamientoPerfecto, esContigua, todasLasCeldas, vecinos } from './grid';
+import { mueble } from '../data/furniture';
+import { emparejamientoPerfecto, esContigua, todasLasCeldas } from './grid';
 import type { Rng } from './rng';
 import type { Celda, Plano } from './types';
 
@@ -21,55 +22,61 @@ function cuantasHabitaciones(rng: Rng, n: number): number {
   return 5 + rng.entero(3); // 5-7
 }
 
+type Rect = { x: number; y: number; w: number; h: number };
+
 /**
- * Crecimiento de regiones desde semillas dispersas. En cada paso hace crecer una región con
- * frontera libre, casi siempre la más pequeña, lo que produce habitaciones de tamaño parecido
- * sin que lleguen a parecer un patrón regular.
+ * Reparto en habitaciones **rectangulares**, por cortes sucesivos del plano.
+ *
+ * Antes esto crecía regiones desde semillas dispersas, y salían estancias con forma de
+ * serpiente de una casilla de ancho: correcto para el motor, pero no parecía una casa. Los
+ * Murdokus impresos reparten la planta en bloques compactos separados por muros, y con cortes
+ * rectos se consigue exactamente eso.
+ *
+ * En cada paso se parte el rectángulo más grande por su lado largo, evitando lonjas
+ * estrechas: ninguna habitación baja de 2 casillas de lado.
  */
 function repartirRegiones(rng: Rng, n: number, k: number): number[] | null {
-  const total = n * n;
-  const region = new Array<number>(total).fill(-1);
-  const tamano = new Array<number>(k).fill(0);
+  const LADO_MINIMO = 2;
+  let piezas: Rect[] = [{ x: 0, y: 0, w: n, h: n }];
 
-  const semillas = rng.baraja(todasLasCeldas(n)).slice(0, k);
-  semillas.forEach((celda, i) => {
-    region[celda] = i;
-    tamano[i] = 1;
-  });
+  while (piezas.length < k) {
+    // Se corta la mayor de las que todavía admiten corte.
+    const cortables = piezas.filter(
+      (r) => Math.max(r.w, r.h) >= LADO_MINIMO * 2,
+    );
+    if (cortables.length === 0) break;
 
-  let pendientes = total - k;
-  while (pendientes > 0) {
-    // Frontera de cada región: casillas sin asignar pegadas a ella.
-    const fronteras: Celda[][] = Array.from({ length: k }, () => []);
-    for (let celda = 0; celda < total; celda++) {
-      if (region[celda] !== -1) continue;
-      for (const v of vecinos(celda, n)) {
-        const r = region[v]!;
-        if (r !== -1 && !fronteras[r]!.includes(celda)) fronteras[r]!.push(celda);
-      }
-    }
+    const mayor = Math.max(...cortables.map((r) => r.w * r.h));
+    const objetivo = rng.elige(cortables.filter((r) => r.w * r.h === mayor));
 
-    const conFrontera = fronteras
-      .map((f, i) => ({ i, f }))
-      .filter((x) => x.f.length > 0);
-    if (conFrontera.length === 0) return null; // región aislada: plano inservible
+    // Por el lado largo, para que no salgan pasillos alargados.
+    const vertical = objetivo.w === objetivo.h ? rng.quiza(0.5) : objetivo.w > objetivo.h;
+    const largo = vertical ? objetivo.w : objetivo.h;
+    if (largo < LADO_MINIMO * 2) break;
 
-    // Sesgo hacia la región más pequeña, con algo de azar para que no salgan todas iguales.
-    let elegida: { i: number; f: Celda[] };
-    if (rng.quiza(0.75)) {
-      const minimo = Math.min(...conFrontera.map((x) => tamano[x.i]!));
-      elegida = rng.elige(conFrontera.filter((x) => tamano[x.i] === minimo));
-    } else {
-      elegida = rng.elige(conFrontera);
-    }
+    // El corte cae en la zona central: partir por el borde daría habitaciones de una tira.
+    const corte = LADO_MINIMO + rng.entero(largo - LADO_MINIMO * 2 + 1);
 
-    const celda = rng.elige(elegida.f);
-    region[celda] = elegida.i;
-    tamano[elegida.i]!++;
-    pendientes--;
+    piezas = piezas.filter((r) => r !== objetivo);
+    piezas.push(
+      vertical
+        ? { x: objetivo.x, y: objetivo.y, w: corte, h: objetivo.h }
+        : { x: objetivo.x, y: objetivo.y, w: objetivo.w, h: corte },
+      vertical
+        ? { x: objetivo.x + corte, y: objetivo.y, w: objetivo.w - corte, h: objetivo.h }
+        : { x: objetivo.x, y: objetivo.y + corte, w: objetivo.w, h: objetivo.h - corte },
+    );
   }
 
-  if (tamano.some((t) => t < 3)) return null;
+  if (piezas.length < 4) return null;
+
+  const region = new Array<number>(n * n).fill(-1);
+  piezas.forEach((r, i) => {
+    for (let y = r.y; y < r.y + r.h; y++) {
+      for (let x = r.x; x < r.x + r.w; x++) region[y * n + x] = i;
+    }
+  });
+  if (region.some((r) => r === -1)) return null;
   return region;
 }
 
@@ -91,27 +98,22 @@ function amueblar(
     const hab = habitacion(idHab);
     const celdas = rng.baraja(celdasDeRegion[i]!);
 
-    // Entre un cuarto y un tercio largo de la habitación queda ocupada por muebles grandes,
-    // dejando siempre al menos una casilla libre donde pueda haber alguien.
-    const densidad = 0.25 + rng.siguiente() * 0.15;
+    // Se amuebla entre un tercio y la mitad de la estancia. Que la casilla quede libre o no
+    // lo decide el mueble: en la cama o en la butaca sí cabe alguien, en el armario no.
+    const densidad = 0.35 + rng.siguiente() * 0.2;
     const cuantos = Math.min(
-      hab.bloqueantes.length,
+      hab.muebles.length,
       celdas.length - 1,
       Math.max(1, Math.round(celdas.length * densidad)),
     );
 
-    const grandes = rng.baraja(hab.bloqueantes).slice(0, cuantos);
-    grandes.forEach((idMueble, j) => {
-      const celda = celdas[j]!;
-      muebleDe[celda] = idMueble;
-      bloqueada[celda] = true;
-    });
-
-    // Un elemento de suelo, que sí se puede pisar, en una casilla libre.
-    const libres = celdas.slice(cuantos);
-    if (libres.length > 0 && hab.suelo.length > 0 && rng.quiza(0.8)) {
-      muebleDe[rng.elige(libres)] = rng.elige(hab.suelo);
-    }
+    rng.baraja(hab.muebles)
+      .slice(0, cuantos)
+      .forEach((idMueble, j) => {
+        const celda = celdas[j]!;
+        muebleDe[celda] = idMueble;
+        bloqueada[celda] = !mueble(idMueble).ocupable;
+      });
   });
 
   // Reparación: si el amueblado ha dejado el tablero sin colocación posible, se van liberando
@@ -164,6 +166,38 @@ export function generarPlano(rng: Rng, n: number): Plano | null {
 /** Casillas de una habitación. */
 export function celdasDeHabitacion(plano: Plano, idHab: string): Celda[] {
   return todasLasCeldas(plano.n).filter((c) => plano.habitacionDe[c] === idHab);
+}
+
+/**
+ * Rectángulo que ocupa una habitación. Como el reparto es por cortes rectos, la caja
+ * envolvente **es** la habitación.
+ */
+export function rectanguloDeHabitacion(
+  plano: Plano,
+  idHab: string,
+): { f0: number; c0: number; f1: number; c1: number } {
+  const celdas = celdasDeHabitacion(plano, idHab);
+  const filas = celdas.map((c) => Math.floor(c / plano.n));
+  const cols = celdas.map((c) => c % plano.n);
+  return {
+    f0: Math.min(...filas),
+    c0: Math.min(...cols),
+    f1: Math.max(...filas),
+    c1: Math.max(...cols),
+  };
+}
+
+/**
+ * ¿Está la casilla en una de las cuatro esquinas de **su habitación**?
+ *
+ * El pasatiempo impreso usa la esquina de la estancia, no la del plano, y es mucho mejor
+ * pista: la del plano solo señala 4 casillas de todo el tablero.
+ */
+export function esEsquinaDeHabitacion(plano: Plano, celda: Celda): boolean {
+  const r = rectanguloDeHabitacion(plano, plano.habitacionDe[celda]!);
+  const f = Math.floor(celda / plano.n);
+  const c = celda % plano.n;
+  return (f === r.f0 || f === r.f1) && (c === r.c0 || c === r.c1);
 }
 
 /** Casilla donde está un mueble concreto, o null. Los ids son únicos en el tablero. */

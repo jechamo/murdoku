@@ -36,7 +36,7 @@ import {
 const INTERES: Record<Pista['tipo'], number> = {
   aSolas: 9,
   recuento: 9,
-  sobreMueble: 8,
+  enMueble: 9,
   masCerca: 8,
   mismaHabitacion: 7,
   juntoAMueble: 7,

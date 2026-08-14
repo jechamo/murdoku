@@ -25,14 +25,20 @@ describe('coherencia de los datos', () => {
   it('cada habitación referencia muebles que existen y no los comparte con otra', () => {
     const dueño = new Map<string, string>();
     for (const hab of HABITACIONES) {
-      expect(hab.bloqueantes.length, `${hab.id} sin muebles`).toBeGreaterThan(0);
-      for (const id of [...hab.bloqueantes, ...hab.suelo]) {
+      expect(hab.muebles.length, `${hab.id} sin muebles`).toBeGreaterThan(0);
+      for (const id of hab.muebles) {
         expect(MUEBLES_POR_ID[id], `${hab.id} usa un mueble inexistente: ${id}`).toBeDefined();
         expect(dueño.get(id), `${id} lo usan ${dueño.get(id)} y ${hab.id}`).toBeUndefined();
         dueño.set(id, hab.id);
       }
-      for (const id of hab.bloqueantes) expect(MUEBLES_POR_ID[id]!.bloquea, id).toBe(true);
-      for (const id of hab.suelo) expect(MUEBLES_POR_ID[id]!.bloquea, id).toBe(false);
+    }
+  });
+
+  it('toda habitación ofrece al menos un mueble donde quepa alguien', () => {
+    // Si no, no se podrían emitir pistas del tipo "estaba en la butaca" en esa estancia.
+    for (const hab of HABITACIONES) {
+      const ocupables = hab.muebles.filter((id) => MUEBLES_POR_ID[id]!.ocupable);
+      expect(ocupables.length, `${hab.id} no tiene ningún mueble ocupable`).toBeGreaterThan(0);
     }
   });
 
@@ -51,7 +57,7 @@ describe('coherencia de los datos', () => {
   });
 
   it('todo mueble del catálogo lo usa alguna habitación', () => {
-    const usados = new Set(HABITACIONES.flatMap((h) => [...h.bloqueantes, ...h.suelo]));
+    const usados = new Set(HABITACIONES.flatMap((h) => h.muebles));
     const huerfanos = MOBILIARIO.filter((m) => !usados.has(m.id)).map((m) => m.id);
     expect(huerfanos, 'muebles que nunca saldrán en un plano').toEqual([]);
   });

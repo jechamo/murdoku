@@ -30,8 +30,8 @@ propio ruido del fondo, con lo que ningún umbral los separa. Al final juega a f
 casilla ocupada por un mueble se distingue de una libre de un vistazo, que es información de
 juego.
 
-Los muebles del suelo (alfombras, manchas, trampillas) se dibujan a opacidad baja, porque
-encima de ellos sí van personajes y marcas.
+Los muebles en los que cabe una persona (la cama, el sofá, la butaca, la bañera, y todo lo del
+suelo) se dibujan algo más tenues, porque encima de ellos van a caer retratos y marcas.
 
 Los retratos se muestran desde 24 px (marca de candidato en una casilla) hasta 80 px
 (veredicto), así que la cara tiene que reconocerse en miniatura: mejor primer plano marcado y
@@ -76,80 +76,80 @@ Recortados de `laminas/personajes-{1,2,3}.png`, rejilla 2x2.
 
 Recortado de `laminas/mobiliario-{a2,b,c,d,e}.png`, rejilla 5x3: cada fila es una habitacion.
 
-| Fichero | Mueble | Llena la casilla |
+| Fichero | Mueble | ¿Cabe una persona? |
 |---|---|---|
-| `nevera.png` | la nevera | si |
-| `fogones.png` | los fogones | si |
-| `fregadero.png` | el fregadero | si |
-| `alacena.png` | la alacena | si |
-| `mancha_grasa.png` | la mancha de grasa | no, es del suelo |
-| `sofa.png` | el sofá | si |
-| `televisor.png` | el televisor | si |
-| `chimenea.png` | la chimenea | si |
-| `butaca.png` | la butaca | si |
-| `alfombra_persa.png` | la alfombra persa | no, es del suelo |
-| `cama.png` | la cama | si |
-| `armario.png` | el armario | si |
-| `tocador.png` | el tocador | si |
-| `mesilla.png` | la mesilla de noche | si |
-| `alfombra_piel.png` | la alfombra de piel | no, es del suelo |
-| `escritorio.png` | el escritorio | si |
-| `caja_fuerte.png` | la caja fuerte | si |
-| `globo.png` | el globo terráqueo | si |
-| `archivador.png` | el archivador | si |
-| `alfombra_lectura.png` | la alfombra de lectura | no, es del suelo |
-| `estanteria.png` | la estantería | si |
-| `atril.png` | el atril | si |
-| `escalera_mano.png` | la escalera de mano | si |
-| `vitrina.png` | la vitrina | si |
-| `alfombra_raida.png` | la alfombra raída | no, es del suelo |
-| `banera.png` | la bañera | si |
-| `lavabo.png` | el lavabo | si |
-| `espejo.png` | el espejo | si |
-| `cesto_ropa.png` | el cesto de la ropa | si |
-| `baldosa_suelta.png` | la baldosa suelta | no, es del suelo |
-| `mesa_larga.png` | la mesa larga | si |
-| `aparador.png` | el aparador | si |
-| `candelabro.png` | el candelabro | si |
-| `trinchero.png` | el trinchero | si |
-| `alfombra_bordada.png` | la alfombra bordada | no, es del suelo |
-| `palmera.png` | la palmera | si |
-| `banco_piedra.png` | el banco de piedra | si |
-| `fuente.png` | la fuente | si |
-| `macetero.png` | el macetero | si |
-| `charco.png` | el charco de agua | no, es del suelo |
-| `caldera.png` | la caldera | si |
-| `barriles.png` | los barriles | si |
-| `herramientas.png` | las herramientas | si |
-| `arcon.png` | el arcón | si |
-| `trampilla.png` | la trampilla | no, es del suelo |
-| `perchero.png` | el perchero | si |
-| `reloj_pie.png` | el reloj de pie | si |
-| `cuadro.png` | el cuadro torcido | si |
-| `consola.png` | la consola de entrada | si |
-| `felpudo.png` | el felpudo | no, es del suelo |
-| `piano.png` | el piano | si |
-| `arpa.png` | el arpa | si |
-| `gramola.png` | la gramola | si |
-| `atril_musica.png` | el atril de partituras | si |
-| `tarima.png` | la tarima | no, es del suelo |
-| `mesa_billar.png` | la mesa de billar | si |
-| `taquera.png` | la taquera | si |
-| `mueble_bar.png` | el mueble bar | si |
-| `diana.png` | la diana | si |
-| `alfombra_verde.png` | la alfombra verde | no, es del suelo |
-| `baules.png` | los baúles | si |
-| `maniqui.png` | el maniquí | si |
-| `espejo_roto.png` | el espejo roto | si |
-| `jaula.png` | la jaula vacía | si |
-| `tablon_suelto.png` | el tablón suelto | no, es del suelo |
-| `coche.png` | el coche | si |
-| `banco_trabajo.png` | el banco de trabajo | si |
-| `neumaticos.png` | los neumáticos | si |
-| `gato_hidraulico.png` | el gato hidráulico | si |
-| `mancha_aceite.png` | la mancha de aceite | no, es del suelo |
-| `escalinata.png` | la escalinata | si |
-| `estatua.png` | la estatua | si |
-| `paraguero.png` | el paragüero | si |
-| `recibidor.png` | el mueble recibidor | si |
-| `felpudo_largo.png` | el felpudo largo | no, es del suelo |
+| `nevera.png` | la nevera | no, llena la casilla |
+| `fogones.png` | los fogones | no, llena la casilla |
+| `fregadero.png` | el fregadero | no, llena la casilla |
+| `alacena.png` | la alacena | no, llena la casilla |
+| `mancha_grasa.png` | la mancha de grasa | sí, se pisa |
+| `sofa.png` | el sofá | sí, uno se sienta o se tumba |
+| `televisor.png` | el televisor | no, llena la casilla |
+| `chimenea.png` | la chimenea | no, llena la casilla |
+| `butaca.png` | la butaca | sí, uno se sienta o se tumba |
+| `alfombra_persa.png` | la alfombra persa | sí, se pisa |
+| `cama.png` | la cama | sí, uno se sienta o se tumba |
+| `armario.png` | el armario | no, llena la casilla |
+| `tocador.png` | el tocador | no, llena la casilla |
+| `mesilla.png` | la mesilla de noche | no, llena la casilla |
+| `alfombra_piel.png` | la alfombra de piel | sí, se pisa |
+| `escritorio.png` | el escritorio | no, llena la casilla |
+| `caja_fuerte.png` | la caja fuerte | no, llena la casilla |
+| `globo.png` | el globo terráqueo | no, llena la casilla |
+| `archivador.png` | el archivador | no, llena la casilla |
+| `alfombra_lectura.png` | la alfombra de lectura | sí, se pisa |
+| `estanteria.png` | la estantería | no, llena la casilla |
+| `atril.png` | el atril | no, llena la casilla |
+| `escalera_mano.png` | la escalera de mano | no, llena la casilla |
+| `vitrina.png` | la vitrina | no, llena la casilla |
+| `alfombra_raida.png` | la alfombra raída | sí, se pisa |
+| `banera.png` | la bañera | sí, uno se sienta o se tumba |
+| `lavabo.png` | el lavabo | no, llena la casilla |
+| `espejo.png` | el espejo | no, llena la casilla |
+| `cesto_ropa.png` | el cesto de la ropa | no, llena la casilla |
+| `baldosa_suelta.png` | la baldosa suelta | sí, se pisa |
+| `mesa_larga.png` | la mesa larga | no, llena la casilla |
+| `aparador.png` | el aparador | no, llena la casilla |
+| `candelabro.png` | el candelabro | no, llena la casilla |
+| `trinchero.png` | el trinchero | no, llena la casilla |
+| `alfombra_bordada.png` | la alfombra bordada | sí, se pisa |
+| `palmera.png` | la palmera | no, llena la casilla |
+| `banco_piedra.png` | el banco de piedra | sí, uno se sienta o se tumba |
+| `fuente.png` | la fuente | no, llena la casilla |
+| `macetero.png` | el macetero | no, llena la casilla |
+| `charco.png` | el charco de agua | sí, se pisa |
+| `caldera.png` | la caldera | no, llena la casilla |
+| `barriles.png` | los barriles | no, llena la casilla |
+| `herramientas.png` | las herramientas | no, llena la casilla |
+| `arcon.png` | el arcón | no, llena la casilla |
+| `trampilla.png` | la trampilla | sí, se pisa |
+| `perchero.png` | el perchero | no, llena la casilla |
+| `reloj_pie.png` | el reloj de pie | no, llena la casilla |
+| `cuadro.png` | el cuadro torcido | no, llena la casilla |
+| `consola.png` | la consola de entrada | no, llena la casilla |
+| `felpudo.png` | el felpudo | sí, se pisa |
+| `piano.png` | el piano | no, llena la casilla |
+| `arpa.png` | el arpa | no, llena la casilla |
+| `gramola.png` | la gramola | no, llena la casilla |
+| `atril_musica.png` | el atril de partituras | no, llena la casilla |
+| `tarima.png` | la tarima | sí, se pisa |
+| `mesa_billar.png` | la mesa de billar | no, llena la casilla |
+| `taquera.png` | la taquera | no, llena la casilla |
+| `mueble_bar.png` | el mueble bar | no, llena la casilla |
+| `diana.png` | la diana | no, llena la casilla |
+| `alfombra_verde.png` | la alfombra verde | sí, se pisa |
+| `baules.png` | los baúles | sí, se pisa |
+| `maniqui.png` | el maniquí | no, llena la casilla |
+| `espejo_roto.png` | el espejo roto | no, llena la casilla |
+| `jaula.png` | la jaula vacía | no, llena la casilla |
+| `tablon_suelto.png` | el tablón suelto | sí, se pisa |
+| `coche.png` | el coche | sí, uno se sienta o se tumba |
+| `banco_trabajo.png` | el banco de trabajo | no, llena la casilla |
+| `neumaticos.png` | los neumáticos | no, llena la casilla |
+| `gato_hidraulico.png` | el gato hidráulico | no, llena la casilla |
+| `mancha_aceite.png` | la mancha de aceite | sí, se pisa |
+| `escalinata.png` | la escalinata | sí, uno se sienta o se tumba |
+| `estatua.png` | la estatua | no, llena la casilla |
+| `paraguero.png` | el paragüero | no, llena la casilla |
+| `recibidor.png` | el mueble recibidor | no, llena la casilla |
+| `felpudo_largo.png` | el felpudo largo | sí, se pisa |

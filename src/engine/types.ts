@@ -83,7 +83,7 @@ export type Direccion = 'norte' | 'sur' | 'este' | 'oeste';
 export type Pista =
   | { tipo: 'habitacion'; actor: string; habitacion: string; negada: boolean }
   | { tipo: 'juntoAMueble'; actor: string; mueble: string; negada: boolean }
-  | { tipo: 'sobreMueble'; actor: string; mueble: string }
+  | { tipo: 'enMueble'; actor: string; mueble: string }
   | { tipo: 'direccion'; actor: string; otro: string; dir: Direccion }
   // Ojo: dos ocupantes nunca comparten fila ni columna, así que no pueden ser contiguos en
   // ortogonal. La única vecindad posible entre ellos es la diagonal.
@@ -91,6 +91,8 @@ export type Pista =
   | { tipo: 'distancia'; a: string; b: string; pasos: number }
   | { tipo: 'masCerca'; cerca: string; lejos: string; ref: string }
   | { tipo: 'perimetro'; actor: string; negada: boolean }
+  // Esquina de SU habitación, no del plano: es como lo plantea el pasatiempo impreso,
+  // y con habitaciones rectangulares sale una pista mucho más jugosa.
   | { tipo: 'esquina'; actor: string; negada: boolean }
   | { tipo: 'mismaHabitacion'; a: string; b: string; negada: boolean }
   | { tipo: 'aSolas'; actor: string }

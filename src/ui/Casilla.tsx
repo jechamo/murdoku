@@ -82,8 +82,10 @@ export function Casilla(props: PropsCasilla) {
 
   // Las paredes entre habitaciones se dibujan gruesas y claras; las divisiones internas,
   // apenas insinuadas. Es lo que hace legible el plano de un vistazo.
+  // El muro es ahora la señal principal de dónde empieza y acaba una estancia, porque el color
+  // ya no se echa por encima del mobiliario. Tiene que verse sin lugar a dudas.
   const borde = (pared: boolean) =>
-    pared ? '3px solid rgba(244,239,228,0.78)' : '1px solid rgba(255,255,255,0.05)';
+    pared ? '3px solid rgba(246,241,230,0.92)' : '1px solid rgba(255,255,255,0.04)';
 
   return (
     <div
@@ -109,32 +111,50 @@ export function Casilla(props: PropsCasilla) {
       <div
         className="pointer-events-none absolute inset-0 transition-[filter] duration-300"
         style={{
-          background: tinte(colorHabitacion, 0.28),
-          // Apagada, pero no negra: la habitación tiene que seguir distinguiéndose en las
-          // líneas ya resueltas, porque el asesino se decide por quién comparte estancia con
-          // la víctima y las habitaciones cruzan medio tablero.
-          filter: tachada && !esVictima ? 'grayscale(0.55) brightness(0.58)' : undefined,
+          // El tinte solo pinta el SUELO de la estancia. La habitación se reconoce por su muro
+          // y por su rótulo, como en el plano de un Murdoku impreso; el color es un apoyo, no
+          // el mecanismo, y por eso no se echa por encima del mobiliario.
+          background: tinte(colorHabitacion, 0.22),
+          filter: tachada && !esVictima ? 'grayscale(0.5) brightness(0.62)' : undefined,
         }}
         aria-hidden
       >
         {/*
-         * El mueble no es un iconito: es una baldosa ilustrada que llena la casilla. Los que
-         * ocupan la casilla van a plena opacidad —así una casilla donde no cabe nadie se
-         * distingue de un vistazo—, y los elementos de suelo quedan tenues, porque encima de
-         * ellos sí van personajes y marcas.
+         * El mueble se ve tal cual, sin película de color por encima: es una ilustración que
+         * llena la casilla. Los elementos que admiten persona (la cama, la butaca, la alfombra)
+         * van algo más tenues, porque encima de ellos van a caer retratos y marcas.
          */}
+        {/* Un punto de brillo: la ilustración viene muy oscura de origen y sobre el fondo noir
+            del tablero se apagaba demasiado. */}
         {mueble && (
-          <div className={`absolute inset-0 ${bloqueada ? '' : 'opacity-45'}`}>
+          <div
+            className={`absolute inset-0 ${bloqueada ? '' : 'opacity-70'}`}
+            style={{ filter: 'brightness(1.22) contrast(1.06)' }}
+          >
             <IconoMueble id={mueble} />
           </div>
         )}
-
-        {/* Tinte de habitación por encima de la ilustración: sin esto, una casilla amueblada
-            perdería su color de región y el plano dejaría de leerse por zonas. */}
-        {mueble && bloqueada && (
-          <div className="absolute inset-0" style={{ background: tinte(colorHabitacion, 0.34) }} />
-        )}
       </div>
+
+      {/*
+       * Fila y columna descartadas: una X a lápiz en cada casilla, que es como se marca en el
+       * pasatiempo impreso. No se pinta sobre la casilla del propio sospechoso —ahí se le ve a
+       * él— ni sobre la escena del crimen.
+       */}
+      {tachada && !esVictima && !ocupante && (
+        <svg
+          viewBox="0 0 100 100"
+          className="pointer-events-none absolute inset-[32%] h-[36%] w-[36%] animate-aparecer"
+          aria-hidden
+        >
+          <path
+            d="M8 8 92 92M92 8 8 92"
+            stroke="rgba(244,239,228,0.4)"
+            strokeWidth="9"
+            strokeLinecap="round"
+          />
+        </svg>
+      )}
 
       {esVictima && (
         <>

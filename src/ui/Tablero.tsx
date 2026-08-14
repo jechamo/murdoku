@@ -1,6 +1,7 @@
 import { habitacion } from '../data/rooms';
-import { columna, fila, nombreCelda } from '../engine/types';
-import { Casilla, tinte, type Bordes } from './Casilla';
+import { rectanguloDeHabitacion } from '../engine/layout';
+import { columna, fila, nombreCelda, type Plano } from '../engine/types';
+import { Casilla, type Bordes } from './Casilla';
 import { colorDeHabitacion } from './paleta';
 import { columnasTachadas, filasTachadas, useJuego } from '../state/store';
 
@@ -23,7 +24,6 @@ export function Tablero() {
   const filasFuera = filasTachadas(caso, confirmados);
   const colsFuera = columnasTachadas(caso, confirmados);
 
-  // Casilla → sospechoso confirmado ahí.
   const ocupantes = new Map<number, string>();
   for (const [actor, celda] of Object.entries(confirmados)) ocupantes.set(celda, actor);
 
@@ -40,37 +40,45 @@ export function Tablero() {
   };
 
   const cabecera = 'flex items-center justify-center font-maquina text-[0.7rem] sm:text-xs';
+  const rejilla = { gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` };
 
   return (
     <div className="tablero w-full">
-      <div
-        className="grid gap-0"
-        style={{ gridTemplateColumns: `1.4rem repeat(${n}, minmax(0, 1fr))` }}
-      >
-        {/* Esquina + letras de columna */}
+      <div className="grid" style={{ gridTemplateColumns: '1.35rem minmax(0, 1fr)' }}>
         <div />
-        {Array.from({ length: n }, (_, c) => (
-          <div
-            key={`col-${c}`}
-            className={`${cabecera} pb-1 ${
-              colsFuera.has(c) ? 'text-sangre-400/60 line-through' : 'text-papel-400'
-            }`}
-          >
-            {String.fromCharCode(65 + c)}
-          </div>
-        ))}
-
-        {Array.from({ length: n }, (_, f) => (
-          <FilaTablero key={`fila-${f}`}>
+        <div className="grid pb-1" style={rejilla}>
+          {Array.from({ length: n }, (_, c) => (
             <div
-              className={`${cabecera} pr-1 ${
+              key={`col-${c}`}
+              className={`${cabecera} ${
+                colsFuera.has(c) ? 'text-sangre-400/60 line-through' : 'text-papel-400'
+              }`}
+            >
+              {String.fromCharCode(65 + c)}
+            </div>
+          ))}
+        </div>
+
+        <div className="grid pr-1" style={{ gridTemplateRows: `repeat(${n}, minmax(0, 1fr))` }}>
+          {Array.from({ length: n }, (_, f) => (
+            <div
+              key={`fila-${f}`}
+              className={`${cabecera} ${
                 filasFuera.has(f) ? 'text-sangre-400/60 line-through' : 'text-papel-400'
               }`}
             >
               {f + 1}
             </div>
-            {Array.from({ length: n }, (_, c) => {
-              const celda = f * n + c;
+          ))}
+        </div>
+
+        {/* Zona de casillas. Es `relative` para poder colgar los rótulos encima sin que
+            entren en la rejilla ni descoloquen nada. */}
+        <div className="relative">
+          <div className="grid" style={rejilla}>
+            {Array.from({ length: n * n }, (_, celda) => {
+              const f = fila(celda, n);
+              const c = columna(celda, n);
               const hab = habitacion(plano.habitacionDe[celda]!);
               const tachada = filasFuera.has(f) || colsFuera.has(c);
               const marcados = caso.reparto.sospechosos.filter((s) =>
@@ -114,39 +122,44 @@ export function Tablero() {
                 />
               );
             })}
-          </FilaTablero>
-        ))}
-      </div>
+          </div>
 
-      <Leyenda
-        habitaciones={plano.habitaciones.map((h) => ({
-          nombre: habitacion(h).nombre,
-          color: colorDeHabitacion(plano, h),
-        }))}
-      />
+          <Rotulos plano={plano} />
+        </div>
+      </div>
     </div>
   );
 }
 
-/** `display: contents` para que las celdas caigan en la rejilla del padre. */
-function FilaTablero({ children }: { children: React.ReactNode }) {
-  return <div className="contents">{children}</div>;
-}
-
-function Leyenda({ habitaciones }: { habitaciones: { nombre: string; color: string }[] }) {
+/**
+ * Nombre de cada estancia rotulado sobre el plano, como en el pasatiempo impreso. Con esto la
+ * leyenda de colores sobra: el color ya solo separa regiones, y quién es cada habitación lo
+ * dice el rótulo.
+ *
+ * Se puede colocar por porcentajes porque toda habitación es un rectángulo macizo.
+ */
+function Rotulos({ plano }: { plano: Plano }) {
+  const { n } = plano;
   return (
-    <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
-      {habitaciones.map((h) => (
-        <li key={h.nombre} className="flex items-center gap-1.5 text-xs text-papel-300">
-          {/* La muestra se pinta con la MISMA alfa que la casilla, sobre el mismo fondo oscuro:
-              antes iba al 60% y el color de la leyenda no se parecía al del tablero. */}
+    <div className="pointer-events-none absolute inset-0" aria-hidden>
+      {plano.habitaciones.map((id) => {
+        const r = rectanguloDeHabitacion(plano, id);
+        return (
           <span
-            className="h-3.5 w-3.5 rounded-sm border border-papel-400/30 bg-tinta-950"
-            style={{ boxShadow: `inset 0 0 0 99px ${tinte(h.color, 0.28)}` }}
-          />
-          {h.nombre}
-        </li>
-      ))}
-    </ul>
+            key={id}
+            className="absolute whitespace-nowrap rounded-full border border-papel-300/25
+                       bg-tinta-950/85 px-1.5 py-px text-[0.5rem] font-semibold uppercase
+                       tracking-wider text-papel-200 shadow-ficha sm:text-[0.6rem]"
+            style={{
+              left: `${((r.c0 + r.c1 + 1) / 2 / n) * 100}%`,
+              top: `${((r.f1 + 1) / n) * 100}%`,
+              transform: 'translate(-50%, -145%)',
+            }}
+          >
+            {habitacion(id).nombre}
+          </span>
+        );
+      })}
+    </div>
   );
 }

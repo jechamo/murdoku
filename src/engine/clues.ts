@@ -13,8 +13,9 @@
 
 import { personaje } from '../data/cast';
 import { conArticuloHab, enHab, habitacion } from '../data/rooms';
-import { juntoA, mueble, sobre } from '../data/furniture';
-import { distancia, esEsquina, esPerimetro, vecinos } from './grid';
+import { juntoA, mueble, ocupando } from '../data/furniture';
+import { distancia, esPerimetro, vecinos } from './grid';
+import { esEsquinaDeHabitacion } from './layout';
 import type { Rng } from './rng';
 import {
   columna,
@@ -43,7 +44,7 @@ export function actoresDe(pista: Pista): string[] {
   switch (pista.tipo) {
     case 'habitacion':
     case 'juntoAMueble':
-    case 'sobreMueble':
+    case 'enMueble':
     case 'perimetro':
     case 'esquina':
     case 'noEnFila':
@@ -100,7 +101,7 @@ export function satisface(
       return contiguo !== pista.negada;
     }
 
-    case 'sobreMueble': {
+    case 'enMueble': {
       const a = p(pista.actor);
       if (a === undefined) return undefined;
       return plano.muebleDe[a] === pista.mueble;
@@ -155,7 +156,7 @@ export function satisface(
     case 'esquina': {
       const a = p(pista.actor);
       if (a === undefined) return undefined;
-      return esEsquina(a, n) !== pista.negada;
+      return esEsquinaDeHabitacion(plano, a) !== pista.negada;
     }
 
     case 'mismaHabitacion': {
@@ -255,8 +256,8 @@ export function redactar(pista: Pista): string {
         : `${nombre(pista.actor)} estaba ${juntoA(m)}.`;
     }
 
-    case 'sobreMueble':
-      return `${nombre(pista.actor)} estaba ${sobre(mueble(pista.mueble))}.`;
+    case 'enMueble':
+      return `${nombre(pista.actor)} estaba ${ocupando(mueble(pista.mueble))}.`;
 
     case 'direccion':
       return `${nombre(pista.actor)} estaba ${PREPOSICION_DIR[pista.dir]} ${nombre(pista.otro)}.`;
@@ -281,8 +282,8 @@ export function redactar(pista: Pista): string {
 
     case 'esquina':
       return pista.negada
-        ? `${nombre(pista.actor)} no estaba en ninguna esquina del plano.`
-        : `${nombre(pista.actor)} estaba en una esquina del plano.`;
+        ? `${nombre(pista.actor)} no estaba en ninguna esquina de su habitación.`
+        : `${nombre(pista.actor)} estaba en una esquina de su habitación.`;
 
     case 'mismaHabitacion':
       return pista.negada
@@ -355,7 +356,7 @@ export function generarBanco(rng: Rng, ctx: Contexto, asig: Asignacion): Pista[]
       añadir({ tipo: 'juntoAMueble', actor: s, mueble: m, negada: true });
     }
     const encima = plano.muebleDe[celda];
-    if (encima) añadir({ tipo: 'sobreMueble', actor: s, mueble: encima });
+    if (encima) añadir({ tipo: 'enMueble', actor: s, mueble: encima });
 
     // — Posición en el plano.
     añadir({ tipo: 'perimetro', actor: s, negada: false });

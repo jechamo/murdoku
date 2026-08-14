@@ -8,7 +8,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { celdasDeHabitacion } from './layout';
+import { celdasDeHabitacion, rectanguloDeHabitacion } from './layout';
 import { ctxDe, generarCaso, codigoDeCaso, leerCodigo } from './generate';
 import { cumpleTodas, redactar, satisface } from './clues';
 import {
@@ -124,11 +124,19 @@ describe('el plano respeta las reglas del escenario', () => {
     }
   });
 
-  it('las habitaciones son contiguas y tienen al menos 3 casillas', () => {
+  it('cada habitación es un rectángulo macizo de al menos 2×2', () => {
+    // Es lo que hace que el plano parezca una casa. Con el reparto anterior salían estancias
+    // con forma de serpiente de una casilla de ancho: válidas pero absurdas de mirar.
     for (const { caso, etiqueta } of CASOS) {
       for (const h of caso.plano.habitaciones) {
         const celdas = celdasDeHabitacion(caso.plano, h);
-        expect(celdas.length, `${etiqueta}: ${h} demasiado pequeña`).toBeGreaterThanOrEqual(3);
+        const r = rectanguloDeHabitacion(caso.plano, h);
+        const ancho = r.c1 - r.c0 + 1;
+        const alto = r.f1 - r.f0 + 1;
+        expect(ancho, `${etiqueta}: ${h} de una sola columna`).toBeGreaterThanOrEqual(2);
+        expect(alto, `${etiqueta}: ${h} de una sola fila`).toBeGreaterThanOrEqual(2);
+        // Macizo: el rectángulo no tiene huecos de otra habitación dentro.
+        expect(celdas.length, `${etiqueta}: ${h} no llena su rectángulo`).toBe(ancho * alto);
         expect(esContigua(celdas, caso.n), `${etiqueta}: ${h} partida en trozos`).toBe(true);
       }
       // Toda casilla pertenece a una habitación declarada.

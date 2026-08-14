@@ -2,16 +2,17 @@
  * Habitaciones temáticas. Cada caso reparte el plano en 4-7 de estas, y cada habitación
  * solo se amuebla con lo suyo, de modo que el mobiliario delata la estancia.
  *
- * `bloqueantes` son muebles que llenan la casilla; `suelo` son elementos pisables, donde
- * un personaje sí puede colocarse.
+ * Si en un mueble concreto cabe una persona lo decide el propio mueble (ver
+ * `data/furniture.ts`), no la habitación: en la cama del Dormitorio sí, en su armario no.
  */
 
 export type Habitacion = {
   id: string;
   nombre: string;
   art: 'el' | 'la';
-  bloqueantes: string[];
-  suelo: string[];
+  /** Los 5 muebles propios de la estancia. Que cada uno admita persona o no lo dice el
+   *  catalogo de mobiliario, no la habitacion. */
+  muebles: string[];
 };
 
 export const HABITACIONES: Habitacion[] = [
@@ -19,106 +20,91 @@ export const HABITACIONES: Habitacion[] = [
     id: 'cocina',
     nombre: 'Cocina',
     art: 'la',
-    bloqueantes: ['nevera', 'fogones', 'fregadero', 'alacena'],
-    suelo: ['mancha_grasa'],
+    muebles: ['nevera', 'fogones', 'fregadero', 'alacena', 'mancha_grasa'],
   },
   {
     id: 'salon',
     nombre: 'Salón',
     art: 'el',
-    bloqueantes: ['sofa', 'televisor', 'chimenea', 'butaca'],
-    suelo: ['alfombra_persa'],
+    muebles: ['sofa', 'televisor', 'chimenea', 'butaca', 'alfombra_persa'],
   },
   {
     id: 'dormitorio',
     nombre: 'Dormitorio',
     art: 'el',
-    bloqueantes: ['cama', 'armario', 'tocador', 'mesilla'],
-    suelo: ['alfombra_piel'],
+    muebles: ['cama', 'armario', 'tocador', 'mesilla', 'alfombra_piel'],
   },
   {
     id: 'estudio',
     nombre: 'Estudio',
     art: 'el',
-    bloqueantes: ['escritorio', 'caja_fuerte', 'globo', 'archivador'],
-    suelo: ['alfombra_lectura'],
+    muebles: ['escritorio', 'caja_fuerte', 'globo', 'archivador', 'alfombra_lectura'],
   },
   {
     id: 'biblioteca',
     nombre: 'Biblioteca',
     art: 'la',
-    bloqueantes: ['estanteria', 'atril', 'escalera_mano', 'vitrina'],
-    suelo: ['alfombra_raida'],
+    muebles: ['estanteria', 'atril', 'escalera_mano', 'vitrina', 'alfombra_raida'],
   },
   {
     id: 'bano',
     nombre: 'Baño',
     art: 'el',
-    bloqueantes: ['banera', 'lavabo', 'espejo', 'cesto_ropa'],
-    suelo: ['baldosa_suelta'],
+    muebles: ['banera', 'lavabo', 'espejo', 'cesto_ropa', 'baldosa_suelta'],
   },
   {
     id: 'comedor',
     nombre: 'Comedor',
     art: 'el',
-    bloqueantes: ['mesa_larga', 'aparador', 'candelabro', 'trinchero'],
-    suelo: ['alfombra_bordada'],
+    muebles: ['mesa_larga', 'aparador', 'candelabro', 'trinchero', 'alfombra_bordada'],
   },
   {
     id: 'invernadero',
     nombre: 'Invernadero',
     art: 'el',
-    bloqueantes: ['palmera', 'banco_piedra', 'fuente', 'macetero'],
-    suelo: ['charco'],
+    muebles: ['palmera', 'banco_piedra', 'fuente', 'macetero', 'charco'],
   },
   {
     id: 'sotano',
     nombre: 'Sótano',
     art: 'el',
-    bloqueantes: ['caldera', 'barriles', 'herramientas', 'arcon'],
-    suelo: ['trampilla'],
+    muebles: ['caldera', 'barriles', 'herramientas', 'arcon', 'trampilla'],
   },
   {
     id: 'pasillo',
     nombre: 'Pasillo',
     art: 'el',
-    bloqueantes: ['perchero', 'reloj_pie', 'cuadro', 'consola'],
-    suelo: ['felpudo'],
+    muebles: ['perchero', 'reloj_pie', 'cuadro', 'consola', 'felpudo'],
   },
   {
     id: 'musica',
     nombre: 'Sala de Música',
     art: 'la',
-    bloqueantes: ['piano', 'arpa', 'gramola', 'atril_musica'],
-    suelo: ['tarima'],
+    muebles: ['piano', 'arpa', 'gramola', 'atril_musica', 'tarima'],
   },
   {
     id: 'billar',
     nombre: 'Sala de Billar',
     art: 'la',
-    bloqueantes: ['mesa_billar', 'taquera', 'mueble_bar', 'diana'],
-    suelo: ['alfombra_verde'],
+    muebles: ['mesa_billar', 'taquera', 'mueble_bar', 'diana', 'alfombra_verde'],
   },
   {
     id: 'desvan',
     nombre: 'Desván',
     art: 'el',
-    bloqueantes: ['baules', 'maniqui', 'espejo_roto', 'jaula'],
-    suelo: ['tablon_suelto'],
+    muebles: ['baules', 'maniqui', 'espejo_roto', 'jaula', 'tablon_suelto'],
   },
   {
     id: 'garaje',
     nombre: 'Garaje',
     art: 'el',
-    bloqueantes: ['coche', 'banco_trabajo', 'neumaticos', 'gato_hidraulico'],
-    suelo: ['mancha_aceite'],
+    muebles: ['coche', 'banco_trabajo', 'neumaticos', 'gato_hidraulico', 'mancha_aceite'],
   },
   {
     id: 'vestibulo',
     nombre: 'Vestíbulo',
     art: 'el',
-    bloqueantes: ['escalinata', 'estatua', 'paraguero', 'recibidor'],
-    suelo: ['felpudo_largo'],
+    muebles: ['escalinata', 'estatua', 'paraguero', 'recibidor', 'felpudo_largo'],
   },
 ];
 
