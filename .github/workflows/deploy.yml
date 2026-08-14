@@ -61,8 +61,3 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
-        with:
-          # La acción se queda esperando a que Pages dé por buena la publicación, y se ha visto
-          # colgada más de veinte minutos sin decir nada. Mejor que se rinda pronto y falle a la
-          # vista que dejar una tirada eterna aparentando que está trabajando.
-          timeout: 300000
