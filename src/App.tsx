@@ -2,6 +2,7 @@ import { ESCENARIOS, habitacion } from './data/rooms';
 import { aConOficio, capitalizar, personaje } from './data/cast';
 import { NOMBRE_DIFICULTAD } from './engine/types';
 import { BarraSospechosos, Coartadas, FichasSospechosos, FichaVictima } from './ui/Dossier';
+import { CajonPistas } from './ui/CajonPistas';
 import { Controles } from './ui/Controles';
 import { Inventario } from './ui/Inventario';
 import { Pistas } from './ui/Pistas';
@@ -136,7 +137,10 @@ export function App() {
     <div className="min-h-full">
       <Cabecera />
 
-      <main className="mx-auto grid max-w-[1500px] gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(230px,270px)_minmax(0,1fr)_minmax(280px,330px)]">
+      {/* El margen derecho de más en móvil es el carril de la pestaña del cajón de pistas:
+          sin él, la pestaña —que va fija— se come una franja de lo que haya debajo según se
+          va bajando por la página. */}
+      <main className="mx-auto grid max-w-[1500px] gap-6 py-6 pl-4 pr-9 sm:pl-6 lg:pr-6 lg:grid-cols-[minmax(230px,270px)_minmax(0,1fr)_minmax(280px,330px)]">
         {/* Sospechosos */}
         <div className="order-2 space-y-4 lg:order-1">
           <FichaVictima />
@@ -157,9 +161,14 @@ export function App() {
           <ComoSeJuega />
         </div>
 
-        {/* Pistas y controles */}
+        {/* Pistas y controles. En móvil las declaraciones no van aquí, al final de la página,
+            sino en el cajón lateral: son lo que más se consulta y así están a mano. */}
         <div className="order-3 space-y-4">
-          <Seccion titulo="Declaraciones" numero={`${caso.pistas.length}`}>
+          <Seccion
+            titulo="Declaraciones"
+            numero={`${caso.pistas.length}`}
+            className="hidden lg:block"
+          >
             <Pistas />
           </Seccion>
           <Controles />
@@ -175,6 +184,7 @@ export function App() {
       <div className="h-24 lg:hidden" aria-hidden />
 
       <BarraSospechosos />
+      <CajonPistas />
       <CapaFinal />
       <Revelado activo={generando} />
     </div>
